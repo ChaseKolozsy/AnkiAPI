@@ -1,0 +1,17 @@
+# Ignore everything
+*
+
+# Except the specified files
+!anki_api_server.py
+!blueprint_cards.py
+!blueprint_db.py
+!blueprint_decks.py
+!blueprint_exports.py
+!blueprint_imports.py
+!blueprint_notetypes.py
+!blueprint_users.py
+!.gitignore
+!docker/Dockerfile
+!qt/tools/build_ui.py
+
+#This should be everything that is needed
