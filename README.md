@@ -1,6 +1,6 @@
 # AnkiApi
 
-AnkiApi is a project designed to enable the incorporation of theAnki database and spaced repetition system into applications that can benefit from spaced repetition without the Anki GUI. It is meant to be fully featured as far as possible to the exclusion of the GUI.
+AnkiApi is a project designed to enable the incorporation of theAnki database and spaced repetition system into applications that can benefit from spaced repetition without the Anki GUI. It is meant to be fully featured as far as possible to the exclusion of the GUI. It uses Flask to serve the API and Docker to containerize the application.
 
 ## Features
 
