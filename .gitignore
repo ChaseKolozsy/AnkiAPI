@@ -13,5 +13,6 @@
 !.gitignore
 !Dockerfile
 !build_ui.py
+!README.md
 
 #This should be everything that is needed
