@@ -11,7 +11,7 @@
 !blueprint_notetypes.py
 !blueprint_users.py
 !.gitignore
-!docker/Dockerfile
-!qt/tools/build_ui.py
+!Dockerfile
+!build_ui.py
 
 #This should be everything that is needed
