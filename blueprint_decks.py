@@ -106,41 +106,6 @@ def create_deck(deck_name):
     col.close()
     return jsonify({"id": result.id, "name": deck_name}), 201
 
-@decks.route('/api/decks/create-filtered', methods=['POST'])
-def create_filtered_deck():
-    data = request.json
-    deck_name = data.get('deck_name')
-    search_query = data.get('search_query')
-    limit = data.get('limit')
-    delays = data.get('delays')
-
-    if not deck_name or not search_query:
-        return jsonify({"error": "Both deck_name and search_query are required"}), 400
-
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
-    col = Collection(collection_path)
-
-    try:
-        # Create a new filtered deck
-        deck_id = col.decks.new_filtered(deck_name)
-
-        # Define the search criteria for the filtered deck
-        filtered_deck = col.decks.get(deck_id)
-        filtered_deck['terms'][0]['search'] = search_query
-        filtered_deck['terms'][0]['limit'] = limit  # Set a limit for the number of cards
-        filtered_deck['resched'] = True  # Reschedule cards after review
-        filtered_deck['delays'] = delays  # Example delays for learning steps
-
-        # Save the filtered deck configuration
-        col.decks.save(filtered_deck)
-
-        col.close()
-        return jsonify({"message": f"Filtered deck '{deck_name}' created with search: '{search_query}'", "deck_id": deck_id}), 201
-
-    except Exception as e:
-        col.close()
-        return jsonify({"error": str(e)}), 500
-
 @decks.route('/api/decks/<deck_id>/change-notetype', methods=['POST'])
 def change_deck_notetype(deck_id):
     data = request.json
