@@ -19,7 +19,7 @@ To set up the AnkiApi project, follow these steps:
 1. Clone the AnkiApi repository:
 
     ```bash
-    git clone <your-repo-url>
+    git clone https://github.com/ChaseKolozsy/AnkiAPI.git
     cd AnkiApi
     ```
 
