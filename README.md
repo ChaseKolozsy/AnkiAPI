@@ -54,7 +54,7 @@ To set up the AnkiApi project, follow these steps:
 
 ## Usage
 
-1. Start the Anki API server by running the `anki_api_server.py` script.
+1. Start the Anki API server by running the `rebuild.sh` script, or by choosing which command from the script you would like to run in isolation without runniung the rebuild.sh script. (Again, if you run the rebuild.sh script, THIS WILL DELETE ALL DOCKER CONTAINERS, IMAGES, AND VOLUMES. Use at your own risk.)
 2. Use the provided API endpoints to interact with your Anki database for various functionalities.
 
 ## Contributing
