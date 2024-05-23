@@ -445,3 +445,28 @@ def get_active_decks():
     except Exception as e:
         col.close()
         return jsonify({"error": str(e)}), 500
+
+@decks.route('/api/decks/<deck_id>/config', methods=['GET'])
+def get_deck_config(deck_id):
+    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    col = None
+
+    try:
+        deck_id = int(deck_id)  # Ensure deck_id is an integer
+        col = Collection(collection_path)
+        deck_config = col.decks.config_dict_for_deck_id(DeckId(deck_id))
+        
+        if deck_config is None:
+            col.close()
+            return jsonify({"error": "Deck configuration not found"}), 404
+        
+        col.close()
+        return jsonify({"config": deck_config}), 200
+    except ValueError:
+        if col:
+            col.close()
+        return jsonify({"error": "Invalid deck ID"}), 400
+    except Exception as e:
+        if col:
+            col.close()
+        return jsonify({"error": str(e)}), 500
