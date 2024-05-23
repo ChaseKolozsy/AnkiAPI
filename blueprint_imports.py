@@ -207,3 +207,80 @@ def import_csv():
         os.remove(temp_file_path)  # Ensure temporary file is cleaned up on failure
         col.close()
         return jsonify({"error": str(e)}), 500
+
+
+@imports.route('/api/unzip-media', methods=['POST'])
+def unzip_media():
+    username = request.args.get('username')
+    if not username:
+        return jsonify({"error": "Username is required"}), 400
+
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    media_dir = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.media")
+    os.makedirs(media_dir, exist_ok=True)
+
+    temp_file_dir = os.path.expanduser(f"~/temp")
+    os.makedirs(temp_file_dir, exist_ok=True)
+
+    try:
+        # Save the uploaded zip file temporarily
+        temp_zip_path = os.path.join(temp_file_dir, file.filename)
+        file.save(temp_zip_path)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    # Verify zip file was written
+    if not os.path.exists(temp_zip_path):
+        return jsonify({"error": "Failed to save the zip file"}), 500
+    if os.path.getsize(temp_zip_path) == 0:
+        return jsonify({"error": "Saved zip file is empty"}), 500
+
+    try:
+        # Unzip the file into the media directory
+        import zipfile
+        with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
+            zip_ref.extractall(media_dir)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        os.remove(temp_zip_path)  # Clean up the temporary file
+
+    return jsonify({"message": "Media unzipped successfully"}), 200
+
+@imports.route('/api/import-media', methods=['POST'])
+def import_media():
+    username = request.args.get('username')
+    if not username:
+        return jsonify({"error": "Username is required"}), 400
+
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    media_dir = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.media")
+    os.makedirs(media_dir, exist_ok=True)
+
+    media_file_path = os.path.join(media_dir, file.filename)
+
+    try:
+        # Save the file directly into the media directory
+        file.save(media_file_path)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    # Verify file was written
+    if not os.path.exists(media_file_path):
+        return jsonify({"error": "Failed to save the file"}), 500
+    if os.path.getsize(media_file_path) == 0:
+        return jsonify({"error": "Saved file is empty"}), 500
+
+    return jsonify({"message": "Media file saved successfully"}), 200
