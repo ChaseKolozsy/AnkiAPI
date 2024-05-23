@@ -15,6 +15,7 @@ from anki.consts import (
 
 
 import os
+import shutil
 
 # Map state names to their corresponding queue numbers
 state_map = {
@@ -41,3 +42,15 @@ def create_user(username):
         return jsonify({"message": f"User {username} created successfully"}), 201
     else:
         return jsonify({"error": "User already exists"}), 400
+
+@users.route('/api/users/delete/<username>', methods=['DELETE'])
+def delete_user(username):
+    user_dir = os.path.expanduser(f"~/.local/share/Anki2/{username}")
+    try:
+        if os.path.exists(user_dir):
+            shutil.rmtree(user_dir)
+            return jsonify({"message": f"User {username} deleted successfully"}), 200
+        else:
+            return jsonify({"error": "User does not exist"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
