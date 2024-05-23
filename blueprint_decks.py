@@ -19,6 +19,8 @@ from anki.consts import (
     QUEUE_TYPE_PREVIEW
 )
 
+from blueprint_cards import change_notetype
+
 
 import os
 
@@ -110,6 +112,7 @@ def create_deck(deck_name):
 def change_deck_notetype(deck_id):
     data = request.json
     new_notetype_id = data.get('new_notetype_id')
+    match_by_name = data.get('match_by_name', True)  # Optional, defaults to True
 
     if not new_notetype_id:
         return jsonify({"error": "New notetype ID is required"}), 400
@@ -122,10 +125,8 @@ def change_deck_notetype(deck_id):
         new_notetype_id = int(new_notetype_id)
         card_ids = col.decks.cids(DeckId(deck_id))
         for card_id in card_ids:
-            card = col.get_card(CardId(card_id))
-            note = col.get_note(card.nid)
-            note.change_notetype(NotetypeId(new_notetype_id))
-            col.update_note(note)
+            note_id = col.get_card(CardId(card_id)).nid
+            change_notetype(col, note_id, new_notetype_id, match_by_name)
         col.close()
         return jsonify({"message": "Notetypes changed successfully"}), 200
     except Exception as e:
