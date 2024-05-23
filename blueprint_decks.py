@@ -1,7 +1,10 @@
 # blueprint_decks.py
-
 from flask import jsonify, request, Blueprint
 from anki.collection import Collection
+
+from anki import deck_config_pb2, decks_pb2
+from google.protobuf.descriptor import EnumDescriptor
+DeckConfig = deck_config_pb2.DeckConfig
 
 from anki.models import NotetypeId
 
@@ -95,6 +98,10 @@ def update_deck_review_mix(col, deck_id, new_mix, interday_learning_mix, review_
 
     # Save the updated configuration
     col.decks.update_config(deck_conf)
+
+def enum_to_dict(enum: EnumDescriptor):
+    """Converts a protobuf EnumDescriptor to a dictionary."""
+    return {name: value.number for name, value in enum.values_by_name.items()}
 
 ###------------------------- DECKS -------------------------###
 @decks.route('/api/decks/create/<deck_name>', methods=['POST'])
@@ -412,6 +419,26 @@ def get_active_decks():
         col.close()
         return jsonify({"error": str(e)}), 500
 
+
+@decks.route('/api/decks/config/enums', methods=['GET'])
+def get_deck_config_enums():
+    # Access the Config inner class
+    config_class = DeckConfig.Config
+
+    # Dynamically build the dictionary of enums
+    enums_dict = {
+        "NewCardInsertOrder": enum_to_dict(config_class.NewCardInsertOrder.DESCRIPTOR),
+        "NewCardGatherPriority": enum_to_dict(config_class.NewCardGatherPriority.DESCRIPTOR),
+        "NewCardSortOrder": enum_to_dict(config_class.NewCardSortOrder.DESCRIPTOR),
+        "ReviewCardOrder": enum_to_dict(config_class.ReviewCardOrder.DESCRIPTOR),
+        "ReviewMix": enum_to_dict(config_class.ReviewMix.DESCRIPTOR),
+        "LeechAction": enum_to_dict(config_class.LeechAction.DESCRIPTOR),
+        "AnswerAction": enum_to_dict(config_class.AnswerAction.DESCRIPTOR),
+        "QuestionAction": enum_to_dict(config_class.QuestionAction.DESCRIPTOR)
+    }
+
+    return jsonify(enums_dict), 200
+
 @decks.route('/api/decks/<deck_id>/config', methods=['GET'])
 def get_deck_config(deck_id):
     collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
@@ -436,3 +463,5 @@ def get_deck_config(deck_id):
         if col:
             col.close()
         return jsonify({"error": str(e)}), 500
+
+
