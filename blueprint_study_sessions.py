@@ -187,7 +187,7 @@ def study():
     else:
         return jsonify({"error": "Invalid action."}), 400
 
-@study_sessions.route('/api/custom_study', methods=['POST'])
+@study_sessions.route('/api/custom-study', methods=['POST'])
 def custom_study():
     global collection, scheduler, collection_path
 
