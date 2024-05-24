@@ -16,6 +16,7 @@ cp ../blueprint_imports.py ../anki/
 cp ../blueprint_notetypes.py ../anki/
 cp ../blueprint_users.py ../anki/
 cp ../blueprint_cards.py ../anki/
+cp ../blueprint_study_sessions.py ../anki/
 
 cp ../qt/tools/new/build_ui.py ../anki/qt/tools/
 # Rebuild the Docker image
@@ -28,6 +29,7 @@ rm ../anki/blueprint_imports.py
 rm ../anki/blueprint_notetypes.py
 rm ../anki/blueprint_users.py
 rm ../anki/blueprint_cards.py
+rm ../anki/blueprint_study_sessions.py
 cp ../qt/tools/old/build_ui.py ../anki/qt/tools/
 
 # Run the Docker container

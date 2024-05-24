@@ -4,6 +4,7 @@ from anki.notes import NoteId
 
 from anki.scheduler.v3 import Scheduler as V3Scheduler
 from anki import scheduler_pb2
+import os
 
 study_sessions = Blueprint('study_sessions', __name__)
 
@@ -35,7 +36,6 @@ state_map = {
     }
 
 
-###------------------------- Study API -------------------------###
 @study_sessions.route('/api/study', methods=['POST'])
 def study():
     global collection, scheduler, current_card, collection_path
@@ -187,3 +187,36 @@ def study():
 
     else:
         return jsonify({"error": "Invalid action."}), 400
+
+@study_sessions.route('/api/custom_study', methods=['POST'])
+def custom_study():
+    global collection, scheduler, collection_path
+
+    data = request.json
+    username = data.get('username')
+    deck_id = data.get('deck_id')
+    custom_study_params = data.get('custom_study_params')
+
+    try:
+        collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+        if collection is None:
+            collection = Collection(collection_path)
+            scheduler = V3Scheduler(collection)
+    except Exception as e:
+        return jsonify({"error": f"Error opening collection: {e}, collection_path: {collection_path}"}), 500
+
+    try:
+        collection.decks.select(deck_id)
+    except Exception as e:
+        return jsonify({"error": f"Error selecting deck: {e}"}), 500
+
+    try:
+        custom_study_request = scheduler_pb2.CustomStudyRequest(
+            deck_id=deck_id,
+            **custom_study_params
+        )
+        changes = scheduler.custom_study(custom_study_request)
+    except Exception as e:
+        return jsonify({"error": f"Error creating custom study session: {e}"}), 500
+
+    return jsonify({"message": "Custom study session created successfully.", "changes": changes}), 200
