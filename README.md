@@ -44,7 +44,7 @@ To set up the AnkiApi project, follow these steps:
 - `docker/`: Contains Docker-related files.
 - `qt/`: This is necessary for making the docker build compatible with macos, linux, and windows. It will not compile the qt framework if qt is not compatible with the architecture. 
 - `anki/`: Cloned Anki repository.
-- `anki_api_server.py`: Main server script to run the Anki API.
+- `anki_api_server.py`: This is the entrypoint to the Anki API and the docker container. It is the main server script to run the Anki API.
 - `blueprint_decks.py`: Blueprint for decks-related API endpoints.
 - `blueprint_db.py`: Blueprint for database-related API endpoints.
 - `blueprint_imports.py`: Blueprint for imports-related API endpoints.
