@@ -9,6 +9,7 @@
 !blueprint_exports.py
 !blueprint_imports.py
 !blueprint_notetypes.py
+!blueprint_study_sessions.py
 !blueprint_users.py
 !.gitignore
 !Dockerfile
