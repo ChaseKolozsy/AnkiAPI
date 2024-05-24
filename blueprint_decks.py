@@ -334,7 +334,10 @@ def rename_deck(deck_id, new_name):
 
 @decks.route('/api/decks', methods=['GET'])
 def get_decks():
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    username = request.json.get('username')
+    if not username:
+        return jsonify({"error": "Username is required"}), 400
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
     decks = col.decks.all_names_and_ids()
     col.close()

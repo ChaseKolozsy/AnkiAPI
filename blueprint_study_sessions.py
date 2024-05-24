@@ -3,6 +3,7 @@ from anki.collection import  Collection
 from anki.notes import NoteId
 
 from anki.scheduler.v3 import Scheduler as V3Scheduler
+from anki.decks import DeckId
 from anki import scheduler_pb2
 import os
 
@@ -53,6 +54,7 @@ def study():
                 scheduler = V3Scheduler(collection)
         except Exception as e:
             return jsonify({"error": f"Error opening collection: {e}, collection_path: {collection_path}"}), 500
+
         try:
             collection.decks.select(deck_id)
         except Exception as e:
@@ -155,9 +157,6 @@ def study():
         # Answer the card
         scheduler.answer_card(card_answer)
         
-        # Save the collection
-        collection.save()
-        
         # Fetch the next queued card
         queued_cards = scheduler.get_queued_cards(fetch_limit=1)
         if not queued_cards.cards:
@@ -209,6 +208,7 @@ def custom_study():
         collection.decks.select(deck_id)
     except Exception as e:
         return jsonify({"error": f"Error selecting deck: {e}"}), 500
+    
 
     try:
         custom_study_request = scheduler_pb2.CustomStudyRequest(
@@ -216,7 +216,10 @@ def custom_study():
             **custom_study_params
         )
         changes = scheduler.custom_study(custom_study_request)
+        custom_defaults = scheduler.custom_study_defaults(DeckId(int(deck_id)))
+        collection.close()
     except Exception as e:
         return jsonify({"error": f"Error creating custom study session: {e}"}), 500
 
-    return jsonify({"message": "Custom study session created successfully.", "changes": changes}), 200
+    return jsonify({"message": "Custom study session created successfully.", "changes": str(changes), "custom_defaults": str(custom_defaults)}), 200
+
