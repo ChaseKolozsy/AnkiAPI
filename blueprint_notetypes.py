@@ -381,7 +381,9 @@ def get_notetype_templates(notetype_id):
 
 @notetypes.route('/api/notetypes/<notetype_id>/fields', methods=['GET'])
 def get_notetype_fields(notetype_id):
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:

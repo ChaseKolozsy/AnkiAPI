@@ -196,7 +196,7 @@ def change_notetype_by_current():
         col.close()
         return jsonify({"error": str(e)}), 500
 
-@cards.route('/api/move-cards', methods=['POST'])
+@cards.route('/api/cards/move-cards', methods=['POST'])
 def move_cards():
     data = request.json
     card_ids = data.get('card_ids')
