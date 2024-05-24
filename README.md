@@ -36,8 +36,8 @@ To set up the AnkiApi project, follow these steps:
     ./rebuild.sh
     ```
 
-    > **WARNING:** Running `rebuild.sh` will delete all Docker containers, images, and volumes. This script will be modified in the future to avoid this.
-    > There is another docker directory iside of the `anki/docs/docker`, but it is not recommended to use this one because it will not work without modifying it like the one in this project.
+    - > **WARNING:** Running `rebuild.sh` will delete all Docker containers, images, and volumes. This script will be modified in the future to avoid this.
+    - > There is another docker directory iside of the `anki/docs/docker`, but it is not recommended to use this one because it will not work without modifying it like the one in this project.
 
 ## Directory Structure
 
