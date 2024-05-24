@@ -49,6 +49,7 @@ COPY blueprint_imports.py /opt/anki/venv/
 COPY blueprint_notetypes.py /opt/anki/venv/
 COPY blueprint_users.py /opt/anki/venv/
 COPY blueprint_cards.py /opt/anki/venv/
+COPY blueprint_study_sessions.py /opt/anki/venv/
 
 # We use another build stage here so we don't include the wheels in the final image.
 FROM python:${PYTHON_VERSION}-slim as final
