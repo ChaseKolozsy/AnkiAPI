@@ -29,7 +29,7 @@ To set up the AnkiApi project, follow these steps:
     git clone https://github.com/ankitects/anki.git
     ```
 
-3. Navigate to the `docker` directory and run the `rebuild.sh` script:
+3. Navigate to the `AnkiAPI/docker` directory  and run the `rebuild.sh` script:
 
     ```bash
     cd docker
