@@ -51,6 +51,7 @@ To set up the AnkiApi project, follow these steps:
 - `blueprint_cards.py`: Blueprint for cards-related API endpoints.
 - `blueprint_exports.py`: Blueprint for exports-related API endpoints.
 - `blueprint_notetypes.py`: Blueprint for note types-related API endpoints.
+- `blueprint_study_sessions.py`: Blueprint for study sessions-related API endpoints.
 
 ## Usage
 
