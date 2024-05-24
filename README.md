@@ -57,7 +57,7 @@ To set up the AnkiApi project, follow these steps:
 ## Usage
 
 1. Start the Anki API server by running the `rebuild.sh` script, or by choosing which command from the script you would like to run in isolation without runniung the rebuild.sh script. (Again, if you run the rebuild.sh script, THIS WILL DELETE ALL DOCKER CONTAINERS, IMAGES, AND VOLUMES. Use at your own risk.)
-2. Once the docker container is created, you can run it independently of this repository and it can be interacted with through the AnkiClient or if you decide to create your own functions to interact with the endpoints in your applications. 
+2. Once the docker container is created, you can run it independently of this repository and it can be interacted with through the AnkiClient. You can also create your own functions to interact with the endpoints in your applications based on the provided API endpoints. Eventually an OpenApi spec will be provided to document the API endpoints.
 3. Use the provided API endpoints to interact with your Anki database for various functionalities.
 
 ## Contributing
