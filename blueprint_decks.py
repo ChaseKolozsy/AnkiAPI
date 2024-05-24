@@ -108,8 +108,10 @@ def enum_to_dict(enum: EnumDescriptor):
 def create_deck(deck_name):
     if not deck_name:
         return jsonify({"error": "Deck name is required"}), 400
-
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    username = request.json.get('username')
+    if not username:
+        return jsonify({"error": "Username is required"}), 400
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
     result = col.decks.add_normal_deck_with_name(deck_name)
     col.close()

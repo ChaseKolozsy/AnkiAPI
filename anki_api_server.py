@@ -39,7 +39,6 @@ state_map = {
         'preview': QUEUE_TYPE_PREVIEW
     }
 
-
 app = Flask(__name__)
 app.register_blueprint(imports)
 app.register_blueprint(exports)
@@ -48,7 +47,7 @@ app.register_blueprint(decks)
 app.register_blueprint(notetypes)
 app.register_blueprint(cards)
 
-COLLECTION_PATH = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+collection_path = None
 collection = None
 scheduler = None
 current_card = None
@@ -57,38 +56,73 @@ current_card = None
 ###------------------------- Study API -------------------------###
 @app.route('/api/study', methods=['POST'])
 def study():
-    global collection, scheduler, current_card
+    global collection, scheduler, current_card, collection_path
 
     data = request.json
     action = data.get('action')
     deck_id = data.get('deck_id')
-
-
-        
+    username = data.get('username')
 
     if action == 'start':
-        if collection is None:
-            collection = Collection(COLLECTION_PATH)
-            scheduler = V3Scheduler(collection)
-        collection.decks.select(deck_id)
-        queued_cards = scheduler.get_queued_cards(fetch_limit=1)
+        try:
+            collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+            if collection is None:
+                collection = Collection(collection_path)
+                scheduler = V3Scheduler(collection)
+        except Exception as e:
+            return jsonify({"error": f"Error opening collection: {e}, collection_path: {collection_path}"}), 500
+        try:
+            collection.decks.select(deck_id)
+        except Exception as e:
+            return jsonify({"error": f"Error selecting deck: {e}"}), 500
+        try:
+            queued_cards = scheduler.get_queued_cards(fetch_limit=1)
+        except Exception as e:
+            return jsonify({"error": f"Error getting queued cards: {e}"}), 500
         if not queued_cards.cards:
             return jsonify({"message": "No more cards to review."}), 200
-        current_card = queued_cards.cards[0]
-        note = collection.get_note(NoteId(current_card.card.note_id))
-        notetype = collection.models.get(note.mid)
-        template = notetype['tmpls'][0]  # Get the template for the card's ordinal
-        front_template = template['qfmt']  # Get the front template HTML
+        try:
+            current_card = queued_cards.cards[0]
+        except Exception as e:
+            return jsonify({"error": f"Error getting current card: {e}"}), 500
+        try:
+            note = collection.get_note(NoteId(current_card.card.note_id))
+        except Exception as e:
+            return jsonify({"error": f"Error getting note: {e}"}), 500
+        try:
+            notetype = collection.models.get(note.mid)
+        except Exception as e:
+            return jsonify({"error": f"Error getting notetype: {e}"}), 500
+        try:
+            template = notetype['tmpls'][0]  # Get the template for the card's ordinal
+        except Exception as e:
+            return jsonify({"error": f"Error getting template: {e}"}), 500
+        try:
+            front_template = template['qfmt']  # Get the front template HTML
+        except Exception as e:
+            return jsonify({"error": f"Error getting front template: {e}"}), 500
 
-        current_card = collection.get_card(current_card.card.id)
-        current_card.start_timer()
+        try:
+            current_card = collection.get_card(current_card.card.id)
+        except Exception as e:
+            return jsonify({"error": f"Error getting card: {e}"}), 500
+        try:
+            current_card.start_timer()
+        except Exception as e:
+            return jsonify({"error": f"Error starting timer: {e}"}), 500
         # Extract fields used in the front template
-        fields_data = {}
-        for field_name in note.keys():
-            if "{{" + field_name + "}}" in front_template:
-                fields_data[field_name] = note[field_name]
+        try:
+            fields_data = {}
+            for field_name in note.keys():
+                if "{{" + field_name + "}}" in front_template:
+                    fields_data[field_name] = note[field_name]
+        except Exception as e:
+            return jsonify({"error": f"Error extracting fields: {e}"}), 500
 
-        return jsonify({"front": fields_data, "card_id": current_card.id}), 200
+        try:
+            return jsonify({"front": fields_data, "card_id": current_card.id}), 200
+        except Exception as e:
+            return jsonify({"error": f"Error returning response: {e}"}), 500
 
     elif action == 'flip':
         if current_card is None:
