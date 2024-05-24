@@ -88,6 +88,7 @@ def change_notetype(col, note_id, new_notetype_id, match_by_name):
 @cards.route('/api/cards/create', methods=['POST'])
 def create_card():
     data = request.json
+    username = data.get('username')
     note_type = data.get('note_type')
     deck_id = data.get('deck_id')
     fields = data.get('fields')
@@ -96,7 +97,7 @@ def create_card():
     if not note_type or not deck_id or not fields:
         return jsonify({"error": "note_type, deck_id, and fields are required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -120,13 +121,14 @@ def create_card():
 @cards.route('/api/cards/<note_id>/change-notetype', methods=['POST'])
 def change_card_notetype(note_id):
     data = request.json
+    username = data.get('username')
     new_notetype_id = data.get('new_notetype_id')
     match_by_name = data.get('match_by_name', True)
 
     if not new_notetype_id:
         return jsonify({"error": "New notetype ID is required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -145,11 +147,12 @@ def change_notetype_by_tag():
     tag = data.get('tag')
     new_notetype_id = data.get('new_notetype_id')
     match_by_name = data.get('match_by_name', True)
+    username = data.get('username')
 
     if not tag or not new_notetype_id:
         return jsonify({"error": "Tag and new notetype ID are required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -171,11 +174,12 @@ def change_notetype_by_current():
     current_notetype_id = data.get('current_notetype_id')
     new_notetype_id = data.get('new_notetype_id')
     match_by_name = data.get('match_by_name', True)
+    username = data.get('username')
 
     if not current_notetype_id or not new_notetype_id:
         return jsonify({"error": "Current and new notetype IDs are required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -226,11 +230,12 @@ def move_cards():
 def reschedule_card(card_id):
     data = request.json
     new_due_date = data.get('new_due_date')
+    username = data.get('username')
 
     if not new_due_date:
         return jsonify({"error": "New due date is required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -250,11 +255,12 @@ def reschedule_cards_by_tag():
     start_days = data.get('start_days')
     end_days = data.get('end_days')
     only_if_due = data.get('only_if_due', False)
+    username = data.get('username')
 
     if not tag or (not new_due_date and (start_days is None or end_days is None)):
         return jsonify({"error": "Tag and new due date or start and end days are required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -298,11 +304,12 @@ def reschedule_cards_by_deck():
     start_days = data.get('start_days')
     end_days = data.get('end_days')
     only_if_due = data.get('only_if_due', False)
+    username = data.get('username')
 
     if not deck_id or (not new_due_date and (start_days is None or end_days is None)):
         return jsonify({"error": "Deck ID and new due date or start and end days are required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -339,11 +346,12 @@ def reposition_card(card_id):
     new_position = data.get('new_position')
     increment_collection = data.get('increment_collection', False)
     randomize = data.get('randomize', False)
+    username = data.get('username')
 
     if new_position is None:
         return jsonify({"error": "New position is required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -362,11 +370,12 @@ def reposition_cards_by_tag():
     new_position = data.get('new_position')
     increment_collection = data.get('increment_collection', False)
     randomize = data.get('randomize', False)
+    username = data.get('username')
 
     if not tag or new_position is None:
         return jsonify({"error": "Tag and new position are required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -386,11 +395,12 @@ def reposition_cards_by_deck():
     new_position = data.get('new_position')
     increment_collection = data.get('increment_collection', False)
     randomize = data.get('randomize', False)
+    username = data.get('username')
 
     if not deck_id or new_position is None:
         return jsonify({"error": "Deck ID and new position are required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -421,11 +431,12 @@ def reset_card(card_id):
 def reset_cards_by_tag():
     data = request.json
     tag = data.get('tag')
+    username = data.get('username')
 
     if not tag:
         return jsonify({"error": "Tag is required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -445,11 +456,12 @@ def reset_cards_by_tag():
 def reset_cards_by_deck():
     data = request.json
     deck_id = data.get('deck_id')
+    username = data.get('username')
 
     if not deck_id:
         return jsonify({"error": "Deck ID is required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -464,7 +476,10 @@ def reset_cards_by_deck():
 
 @cards.route('/api/cards/<card_id>/suspend', methods=['POST'])
 def suspend_card(card_id):
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -480,11 +495,12 @@ def suspend_card(card_id):
 def suspend_cards_by_tag():
     data = request.json
     tag = data.get('tag')
+    username = data.get('username')
 
     if not tag:
         return jsonify({"error": "Tag is required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -504,11 +520,12 @@ def suspend_cards_by_tag():
 def suspend_cards_by_deck():
     data = request.json
     deck_id = data.get('deck_id')
+    username = data.get('username')
 
     if not deck_id:
         return jsonify({"error": "Deck ID is required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -523,7 +540,10 @@ def suspend_cards_by_deck():
 
 @cards.route('/api/cards/<card_id>/bury', methods=['POST'])
 def bury_card(card_id):
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -541,11 +561,12 @@ def bury_card(card_id):
 def bury_cards_by_tag():
     data = request.json
     tag = data.get('tag')
+    username = data.get('username')
 
     if not tag:
         return jsonify({"error": "Tag is required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -566,11 +587,12 @@ def bury_cards_by_tag():
 def bury_cards_by_deck():
     data = request.json
     deck_id = data.get('deck_id')
+    username = data.get('username')
 
     if not deck_id:
         return jsonify({"error": "Deck ID is required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -588,7 +610,10 @@ def bury_cards_by_deck():
 
 @cards.route('/api/cards/<card_id>/contents', methods=['GET'])
 def get_card_contents(card_id):
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = None
 
     try:
@@ -615,7 +640,10 @@ def get_card_contents(card_id):
 
 @cards.route('/api/cards/<note_id>', methods=['GET'])
 def get_card_by_id(note_id):
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = None
 
     try:
@@ -640,11 +668,14 @@ def get_card_by_id(note_id):
 
 @cards.route('/api/cards/by-tag', methods=['GET'])
 def get_cards_by_tag():
-    tag = request.args.get('tag')
+    data = request.json
+    tag = data.get('tag')
+    username = data.get('username')
+
     if not tag:
         return jsonify({"error": "Tag is required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -673,7 +704,10 @@ def get_cards_by_tag():
 
 @cards.route('/api/cards/<deck_id>/by-state', methods=['GET'])
 def get_cards_by_state(deck_id):
-    state = request.args.get('state')
+    data = request.json
+    state = data.get('state')
+    username = data.get('username')
+
     if not state:
         return jsonify({"error": "State parameter is required"}), 400
 
@@ -683,7 +717,7 @@ def get_cards_by_state(deck_id):
 
     queue_type = state_map[state]
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -715,13 +749,15 @@ def get_cards_by_state(deck_id):
 
 @cards.route('/api/cards/by-tag-and-state', methods=['GET'])
 def get_cards_by_tag_and_state():
-    tag = request.args.get('tag')
-    state = request.args.get('state')
+    data = request.json
+    tag = data.get('tag')
+    state = data.get('state')
+    username = data.get('username')
 
     if not tag or not state:
         return jsonify({"error": "Tag and State parameters are required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     if state not in state_map:
@@ -758,7 +794,11 @@ def get_cards_by_tag_and_state():
 
 @cards.route('/api/cards/delete/<card_id>', methods=['DELETE'])
 def delete_card(card_id):
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+
+
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = None
 
     try:
@@ -783,11 +823,14 @@ def delete_card(card_id):
 
 @cards.route('/api/cards/delete/by-tag', methods=['DELETE'])
 def delete_cards_by_tag():
-    tag = request.args.get('tag')
+    data = request.json
+    tag = data.get('tag')
+    username = data.get('username')
+
     if not tag:
         return jsonify({"error": "Tag is required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -810,11 +853,14 @@ def delete_cards_by_tag():
     
 @cards.route('/api/cards/delete/by-deck', methods=['DELETE'])
 def delete_cards_by_deck():
-    deck_identifier = request.args.get('deck')
+    data = request.json
+    deck_identifier = data.get('deck')
+    username = data.get('username')
+
     if not deck_identifier:
         return jsonify({"error": "Deck identifier (name or ID) is required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:

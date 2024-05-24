@@ -42,7 +42,14 @@ state_map = {
 decks = Blueprint('decks', __name__)
 
 ###------------------------- HELPERS -------------------------###
-def create_deck_config(col, name, new_cards_per_day, review_cards_per_day, new_mix, interday_learning_mix, review_order):
+def create_deck_config(*, 
+                       col: Collection, 
+                       name: str, 
+                       new_cards_per_day: int, 
+                       review_cards_per_day: int, 
+                       new_mix: int, 
+                       interday_learning_mix: int, 
+                       review_order: int) -> int:
     """
     Create a new deck configuration with specified limits for new and review cards,
     and settings for new card mix, interday learning mix, and review order.
@@ -84,7 +91,12 @@ def apply_config_to_deck(col, deck_id, config_id):
     # Save the deck
     col.decks.save(deck)
 
-def update_deck_review_mix(col, deck_id, new_mix, interday_learning_mix, review_order):
+def update_deck_review_mix(*, 
+                           col: Collection, 
+                           deck_id: int, 
+                           new_mix: int, 
+                           interday_learning_mix: int, 
+                           review_order: int): 
     """
     Update the mix settings for new cards, learning cards, and review order in a deck configuration.
     """
@@ -106,9 +118,10 @@ def enum_to_dict(enum: EnumDescriptor):
 ###------------------------- DECKS -------------------------###
 @decks.route('/api/decks/create/<deck_name>', methods=['POST'])
 def create_deck(deck_name):
+    data = request.json
+    username = data.get('username')
     if not deck_name:
         return jsonify({"error": "Deck name is required"}), 400
-    username = request.json.get('username')
     if not username:
         return jsonify({"error": "Username is required"}), 400
     collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
@@ -122,11 +135,12 @@ def change_deck_notetype(deck_id):
     data = request.json
     new_notetype_id = data.get('new_notetype_id')
     match_by_name = data.get('match_by_name', True)  # Optional, defaults to True
+    username = data.get('username')
 
     if not new_notetype_id:
         return jsonify({"error": "New notetype ID is required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -146,11 +160,12 @@ def change_deck_notetype(deck_id):
 def set_new_card_limit(deck_id):
     data = request.json
     new_card_limit = data.get('new_card_limit')
+    username = data.get('username')
 
     if new_card_limit is None:
         return jsonify({"error": "new_card_limit is required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -177,7 +192,9 @@ def set_new_card_limit(deck_id):
     
 @decks.route('/api/decks/set-current/<deck_id>', methods=['POST'])
 def set_current_deck(deck_id):
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
     try:
         deck_id = int(deck_id)
@@ -199,15 +216,23 @@ def create_config():
     new_mix = data.get('new_mix')
     interday_learning_mix = data.get('interday_learning_mix')
     review_order = data.get('review_order')
+    username = data.get('username')
 
-    if not name or new_cards_per_day is None or review_cards_per_day is None or new_mix is None or interday_learning_mix is None or review_order is None:
+    if not name or new_cards_per_day is None or review_cards_per_day is None or new_mix is None or interday_learning_mix is None or review_order is None or username is None:
         return jsonify({"error": "name, new_cards_per_day, review_cards_per_day, new_mix, interday_learning_mix, and review_order are required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
-        config_id = create_deck_config(col, name, new_cards_per_day, review_cards_per_day, new_mix, interday_learning_mix, review_order)
+        config_id = create_deck_config(col=col, 
+                                       name=name, 
+                                       new_cards_per_day=new_cards_per_day, 
+                                       review_cards_per_day=review_cards_per_day, 
+                                       new_mix=new_mix, 
+                                       interday_learning_mix=interday_learning_mix, 
+                                       review_order=review_order
+                                       )
         col.close()
         return jsonify({"message": "Configuration created successfully", "config_id": config_id}), 201
     except Exception as e:
@@ -218,11 +243,12 @@ def create_config():
 def apply_config(deck_id):
     data = request.json
     config_id = data.get('config_id')
+    username = data.get('username')
 
     if config_id is None:
         return jsonify({"error": "config_id is required"}), 400
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
@@ -244,12 +270,17 @@ def update_deck_mix(deck_id):
     new_mix = data.get('new_mix')
     interday_learning_mix = data.get('interday_learning_mix')
     review_order = data.get('review_order')
+    username = data.get('username')
 
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
 
     try:
-        update_deck_review_mix(col, deck_id, new_mix, interday_learning_mix, review_order)
+        update_deck_review_mix(col=col, 
+                               deck_id=deck_id, 
+                               new_mix=new_mix, 
+                               interday_learning_mix=interday_learning_mix, 
+                               review_order=review_order)
         return jsonify({"message": "Deck mix settings updated successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -259,7 +290,9 @@ if __name__ == '__main__':
 
 @decks.route('/api/decks/delete/<deck_id>', methods=['DELETE'])
 def delete_deck(deck_id):
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = None
 
     try:
@@ -279,7 +312,9 @@ def delete_deck(deck_id):
 
 @decks.route('/api/decks/delete-filtered/<deck_id>', methods=['DELETE'])
 def delete_filtered_deck(deck_id):
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = None
 
     try:
@@ -317,7 +352,9 @@ def delete_filtered_deck(deck_id):
 
 @decks.route('/api/decks/rename/<deck_id>/<new_name>', methods=['PUT'])
 def rename_deck(deck_id, new_name):
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
     
     try:
@@ -346,7 +383,9 @@ def get_decks():
 
 @decks.route('/api/decks/<deck_id>', methods=['GET'])
 def get_deck(deck_id):
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = None
     
     try:
@@ -366,7 +405,9 @@ def get_deck(deck_id):
 
 @decks.route('/api/decks/<deck_id>/cards', methods=['GET'])
 def get_cards_in_deck(deck_id):
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = None
 
     try:
@@ -389,7 +430,9 @@ def get_cards_in_deck(deck_id):
 
 @decks.route('/api/decks/get-current-id', methods=['GET'])
 def get_current_deck_id():
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
     try:
         current_deck_id = col.decks.get_current_id()
@@ -401,7 +444,9 @@ def get_current_deck_id():
 
 @decks.route('/api/decks/current', methods=['GET'])
 def get_current_deck():
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
     try:
         current_deck = col.decks.current()
@@ -413,7 +458,9 @@ def get_current_deck():
 
 @decks.route('/api/decks/active', methods=['GET'])
 def get_active_decks():
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = Collection(collection_path)
     try:
         active_decks = col.decks.active()
@@ -446,7 +493,9 @@ def get_deck_config_enums():
 
 @decks.route('/api/decks/<deck_id>/config', methods=['GET'])
 def get_deck_config(deck_id):
-    collection_path = os.path.expanduser("~/.local/share/Anki2/User 1/collection.anki2")
+    data = request.json
+    username = data.get('username')
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
     col = None
 
     try:
