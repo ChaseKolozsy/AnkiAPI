@@ -1,5 +1,5 @@
 # blueprint_users.py
-from flask import jsonify, Blueprint
+from flask import jsonify, Blueprint, request
 from anki.collection import Collection
 
 from anki.consts import (
@@ -54,3 +54,30 @@ def delete_user(username):
             return jsonify({"error": "User does not exist"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# Create an instance of the Syncer class
+@users.route('/api/users/sync-login', methods=['POST'])
+def sync_login():
+    profile_name = request.json['profile_name']
+    username = request.json['username']
+    password = request.json['password']
+    endpoint = request.json.get('endpoint')  # optional
+
+
+    try:
+        collection_path = os.path.expanduser(f"~/.local/share/Anki2/{profile_name}/collection.anki2")
+        col = Collection(collection_path)
+    except Exception as e:
+        return jsonify({"error": "error opening collection: " + str(e)}), 500
+
+    try:
+        auth = col.sync_login(username, password, endpoint)
+        sync_output = col.sync_collection(auth=auth, sync_media=False)
+        server_usn = sync_output.server_media_usn
+        col.full_upload_or_download(auth=auth, server_usn=server_usn, upload=False)
+        col.close()
+
+
+        return jsonify({'hkey': auth.hkey, 'endpoint': auth.endpoint, 'sync_output': f"{sync_output}"})
+    except Exception as e:
+        return jsonify({'error': "error logging in: " + str(e)}), 401
