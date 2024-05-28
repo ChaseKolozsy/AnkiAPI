@@ -29,14 +29,13 @@ To set up the AnkiApi project, follow these steps:
     git clone https://github.com/ankitects/anki.git
     ```
 
-3. Navigate to the `AnkiAPI/docker` directory  and run the `rebuild.sh` script: 
+3. Navigate to the `AnkiAPI/docker` directory  and run the `build.sh` script: 
 
     ```bash
     cd docker
-    ./rebuild.sh
+    ./build.sh
     ```
 
-    - > **WARNING:** Running `rebuild.sh` will delete all Docker containers, images, and volumes. This script will be modified in the future to avoid this.
     - > There is another dockerfile inside of the `anki/docs/docker` directory, but it is not recommended to use this one because it will not work without modifying it like the one in this project.
 
 ## Directory Structure
@@ -56,9 +55,10 @@ To set up the AnkiApi project, follow these steps:
 
 ## Usage
 
-1. Start the Anki API server by running the `rebuild.sh` script, or by choosing which command from the script you would like to run in isolation without running the rebuild.sh script. (Again, if you run the rebuild.sh script, THIS WILL DELETE ALL DOCKER CONTAINERS, IMAGES, AND VOLUMES. Use at your own risk.)
+1. Start the Anki API server by running the `build.sh` script, or by choosing which command from the script you would like to run in isolation without running the build.sh script. 
 2. Once the docker container is created, you can run it independently of this repository and it can be interacted with through the AnkiClient. You can also create your own functions to interact with the endpoints in your applications based on the provided API endpoints. Eventually an OpenApi spec will be provided to document the API endpoints.
 3. Use the provided API endpoints to interact with your Anki database for various functionalities.
+4. To rebuild the docker container, run the `rebuild.sh` script. This will delete all Docker containers and images that have anki-api in their name. It also deletes dangling images and caches so comment that out if you don't want to delete those. 
 
 ## Contributing
 
