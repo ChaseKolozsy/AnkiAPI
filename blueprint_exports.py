@@ -38,12 +38,25 @@ exports = Blueprint('exports', __name__)
 @exports.route('/api/export-collection-package', methods=['POST'])
 def export_collection_package():
     data = request.json
-    out_path = data.get('out_path')
-    include_media = data.get('include_media', False)
-    legacy = data.get('legacy', False)
+    include_media = data.get('include_media', None)
+    legacy = data.get('legacy', None)
     username = request.args.get('username')  
+
+    if type(include_media) == str:
+        if include_media.lower() == 'true':
+            include_media = True
+        else:
+            include_media = False
+    
+    if type(legacy) == str:
+        if legacy.lower() == 'true':
+            legacy = True
+        else:
+            legacy = False
+
     
     collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    out_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.apkg")
     col = Collection(path=collection_path)  # Adjust path as necessary
     try:
         col.export_collection_package(out_path=out_path, include_media=include_media, legacy=legacy)
