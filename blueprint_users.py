@@ -61,6 +61,7 @@ def sync_login():
     profile_name = request.json['profile_name']
     username = request.json['username']
     password = request.json['password']
+    upload = request.json['upload']
     endpoint = request.json.get('endpoint')  # optional
 
 
@@ -74,7 +75,7 @@ def sync_login():
         auth = col.sync_login(username, password, endpoint)
         sync_output = col.sync_collection(auth=auth, sync_media=False)
         server_usn = sync_output.server_media_usn
-        col.full_upload_or_download(auth=auth, server_usn=server_usn, upload=False)
+        col.full_upload_or_download(auth=auth, server_usn=server_usn, upload=upload)
         col.close()
 
 
