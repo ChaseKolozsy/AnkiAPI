@@ -4,6 +4,7 @@ from anki.notes import NoteId
 
 from anki.scheduler.v3 import Scheduler as V3Scheduler
 from anki.decks import DeckId
+from anki.cards import CardId
 from anki import scheduler_pb2
 import os
 import re
@@ -140,10 +141,17 @@ def study():
 
             # Extract fields used in the back template
             fields_data = {field_name: note[field_name] for field_name in note.keys() if "{{" + field_name + "}}" in back_template}
+            try:
+                ease_enumerations = {1: "1: Again", 2: "2: Hard", 3: "3: Good", 4: "4: Easy" }
+                ease_dict = {}
+                for i in range(1, 5):
+                    ease_dict[ease_enumerations[i]] = scheduler.nextIvlStr(current_card, i)
+            except Exception as e:
+                return jsonify({"error": f"Error getting ease options: {e}"}), 500
 
             # Extract fields and media files using the helper function
             media_files = process_media_files(fields_data, media_path)
-            return jsonify({"back": fields_data, "media_files": media_files}), 200
+            return jsonify({"back": fields_data, "ease_options": ease_dict, "media_files": media_files}), 200
 
         elif action in ['1', '2', '3', '4']:
             if current_card is None:
