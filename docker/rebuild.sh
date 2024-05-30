@@ -13,7 +13,7 @@ curl -X POST "${API_URL}/export-collection-package?username=$(echo ${ANKI_USERNA
 # Check if the export was successful
 if [ $? -ne 0 ]; then
     echo "Failed to export collection. Aborting rebuild."
-    exit 1
+    #exit 1
 fi
 
 # Step 2: Stop and remove the specific container

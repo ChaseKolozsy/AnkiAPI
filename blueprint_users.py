@@ -62,7 +62,9 @@ def sync_login():
     username = request.json['username']
     password = request.json['password']
     upload = request.json['upload']
+    sync_media = request.json['sync_media']  # optional
     endpoint = request.json.get('endpoint')  # optional
+
 
 
     try:
@@ -73,12 +75,9 @@ def sync_login():
 
     try:
         auth = col.sync_login(username, password, endpoint)
-        sync_output = col.sync_collection(auth=auth, sync_media=False)
+        sync_output = col.sync_collection(auth=auth, sync_media=sync_media)
         server_usn = sync_output.server_media_usn
         col.full_upload_or_download(auth=auth, server_usn=server_usn, upload=upload)
-        col.close()
-
-
-        return jsonify({'hkey': auth.hkey, 'endpoint': auth.endpoint, 'sync_output': f"{sync_output}"})
+        return jsonify({'hkey': auth.hkey, 'endpoint': auth.endpoint, 'sync_output': f"{sync_output}", 'upload': upload, 'sync_media': sync_media})
     except Exception as e:
         return jsonify({'error': "error logging in: " + str(e)}), 401
