@@ -62,10 +62,8 @@ def sync_login():
     username = request.json['username']
     password = request.json['password']
     upload = request.json['upload']
-    sync_media = request.json['sync_media']  # optional
+    sync_media = request.json.get('sync_media', False)  # optional, default to False
     endpoint = request.json.get('endpoint')  # optional
-
-
 
     try:
         collection_path = os.path.expanduser(f"~/.local/share/Anki2/{profile_name}/collection.anki2")
@@ -74,10 +72,26 @@ def sync_login():
         return jsonify({"error": "error opening collection: " + str(e)}), 500
 
     try:
+        # First, authenticate with the server
         auth = col.sync_login(username, password, endpoint)
+        
+        # Then perform the actual sync operation
         sync_output = col.sync_collection(auth=auth, sync_media=sync_media)
+        
+        # Get the server media USN for subsequent operations
         server_usn = sync_output.server_media_usn
-        col.full_upload_or_download(auth=auth, server_usn=server_usn, upload=upload)
-        return jsonify({'hkey': auth.hkey, 'endpoint': auth.endpoint, 'sync_output': f"{sync_output}", 'upload': upload, 'sync_media': sync_media})
+        
+        # Perform full upload/download if requested
+        if upload is not None:
+            col.full_upload_or_download(auth=auth, server_usn=server_usn, upload=upload)
+        
+        # Return the sync response with all relevant information
+        return jsonify({
+            'hkey': auth.hkey, 
+            'endpoint': auth.endpoint, 
+            'sync_output': f"{sync_output}", 
+            'upload': upload, 
+            'sync_media': sync_media
+        })
     except Exception as e:
         return jsonify({'error': "error logging in: " + str(e)}), 401
