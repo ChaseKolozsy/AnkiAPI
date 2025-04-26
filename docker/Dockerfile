@@ -39,7 +39,8 @@ COPY --from=build /opt/anki/out/wheels/ wheels/
 # Use virtual environment.
 RUN python -m venv venv \
     && ./venv/bin/python -m pip install --no-cache-dir setuptools wheel \
-    && ./venv/bin/python -m pip install --no-cache-dir /opt/anki/wheels/*.whl
+    && ./venv/bin/python -m pip install --no-cache-dir /opt/anki/wheels/*.whl \
+    && ./venv/bin/python -m pip install --no-cache-dir debugpy
 
 # Copy anki_api_server.py to the virtual environment directory
 COPY anki_api_server.py /opt/anki/venv/
@@ -92,6 +93,8 @@ WORKDIR /work
 
 # Expose the port for the API
 EXPOSE 5000
+# Expose the port for debugpy
+EXPOSE 5678
 
 # Set the entry point to run the API server
 ENTRYPOINT ["/opt/anki/venv/bin/python", "/opt/anki/venv/anki_api_server.py"]

@@ -54,5 +54,5 @@ rm ../anki/blueprint_db.py
 cp ../qt/tools/old/build_ui.py ../anki/qt/tools/
 
 # Step 9: Run the Docker container
-docker run -p 5001:5001 --name anki-api anki-api
+docker run -p 5001:5001 -p 5678:5678 --name anki-api anki-api
 

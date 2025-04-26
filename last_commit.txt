@@ -1,0 +1,63 @@
+commit ec077cf781b06fe52bcc57f9b9d3a70c156b6bd0
+Author: Chase Kolozsy <chasekolozsy@gmail.com>
+Date:   Sat Apr 26 17:21:31 2025 +0200
+
+    misc
+
+diff --git a/anki_api_server.py b/anki_api_server.py
+index c58c66b..ae56fb8 100644
+--- a/anki_api_server.py
++++ b/anki_api_server.py
+@@ -1,4 +1,5 @@
+ from flask import Flask
++import debugpy
+ 
+ from blueprint_imports import imports
+ from blueprint_exports import exports
+@@ -19,5 +20,11 @@ app.register_blueprint(cards)
+ app.register_blueprint(study_sessions)
+ app.register_blueprint(db)
+ 
++# Start debugpy on 0.0.0.0:5678 and wait for the debugger to attach
++debugpy.listen(("0.0.0.0", 5678))
++print("⏳ Waiting for debugger attach on port 5678...")
++# Uncomment the next line if you want the server to pause until a debugger attaches:
++# debugpy.wait_for_client()
++
+ if __name__ == '__main__':
+     app.run(host='0.0.0.0', port=5001)
+\ No newline at end of file
+diff --git a/docker/Dockerfile b/docker/Dockerfile
+index ce52b29..974716a 100644
+--- a/docker/Dockerfile
++++ b/docker/Dockerfile
+@@ -39,7 +39,8 @@ COPY --from=build /opt/anki/out/wheels/ wheels/
+ # Use virtual environment.
+ RUN python -m venv venv \
+     && ./venv/bin/python -m pip install --no-cache-dir setuptools wheel \
+-    && ./venv/bin/python -m pip install --no-cache-dir /opt/anki/wheels/*.whl
++    && ./venv/bin/python -m pip install --no-cache-dir /opt/anki/wheels/*.whl \
++    && ./venv/bin/python -m pip install --no-cache-dir debugpy
+ 
+ # Copy anki_api_server.py to the virtual environment directory
+ COPY anki_api_server.py /opt/anki/venv/
+@@ -92,6 +93,8 @@ WORKDIR /work
+ 
+ # Expose the port for the API
+ EXPOSE 5000
++# Expose the port for debugpy
++EXPOSE 5678
+ 
+ # Set the entry point to run the API server
+ ENTRYPOINT ["/opt/anki/venv/bin/python", "/opt/anki/venv/anki_api_server.py"]
+diff --git a/docker/rebuild.sh b/docker/rebuild.sh
+index 0a0d6d8..e06d8d0 100755
+--- a/docker/rebuild.sh
++++ b/docker/rebuild.sh
+@@ -54,5 +54,5 @@ rm ../anki/blueprint_db.py
+ cp ../qt/tools/old/build_ui.py ../anki/qt/tools/
+ 
+ # Step 9: Run the Docker container
+-docker run -p 5001:5001 --name anki-api anki-api
++docker run -p 5001:5001 -p 5678:5678 --name anki-api anki-api
+ 
