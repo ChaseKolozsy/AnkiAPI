@@ -37,7 +37,9 @@ def sync_database():
     username = request.json['username']
     endpoint = request.json['endpoint']
     hkey = request.json['hkey']
-    sync_media = request.json['sync_media']
+    sync_media = request.json.get('sync_media', False)
+    # Add upload parameter with default value of False
+    upload = request.json.get('upload', False)
 
     try:
         collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
@@ -46,12 +48,55 @@ def sync_database():
         return jsonify({"error": "error opening collection: " + str(e)}), 500
 
     try:
-        # Assuming the collection is already logged in the Anki backend
+        # Create auth object
         auth = SyncAuth(endpoint=endpoint, hkey=hkey)
-        sync_output = col.sync_collection(auth=auth, sync_media=sync_media)
-        return jsonify({'sync_output': f"{sync_output}"})
+        
+        # First check sync status to determine if full sync is needed
+        sync_status = col.sync_status(auth)
+        
+        # If the sync status indicates a full sync is required, handle it differently
+        if "FULL_SYNC" in str(sync_status) or "FULL_UPLOAD" in str(sync_status):
+            # Get the new endpoint if provided
+            if hasattr(sync_status, 'new_endpoint') and sync_status.new_endpoint:
+                auth.endpoint = sync_status.new_endpoint
+                
+            # Perform full sync
+            try:
+                # For full sync, we don't pass server_usn
+                col.full_upload_or_download(auth=auth, server_usn=None, upload=upload)
+                
+                # After full sync, sync media if requested
+                if sync_media:
+                    col.sync_media(auth)
+                    
+                return jsonify({
+                    'sync_output': f"{sync_status}",
+                    'full_sync': 'completed',
+                    'media_sync': 'completed' if sync_media else 'not requested'
+                })
+            except Exception as e:
+                return jsonify({
+                    'error': f"Full sync failed: {str(e)}",
+                    'sync_status': f"{sync_status}"
+                }), 500
+        
+        # For normal sync
+        sync_output = col.sync_collection(auth=auth, sync_media=False)
+        
+        # For media sync
+        media_result = None
+        if sync_media:
+            server_usn = sync_output.server_media_usn if hasattr(sync_output, 'server_media_usn') else None
+            if server_usn is not None:
+                col.sync_media(auth)
+                media_result = "completed"
+        
+        return jsonify({
+            'sync_output': f"{sync_output}",
+            'media_sync': media_result
+        })
     except Exception as e:
-        return jsonify({'error': "error syncing database: " + str(e)}), 500
+        return jsonify({'error': f"Error syncing database: {str(e)}"}), 500
 
 # Add the following endpoints to the 'db' blueprint in blueprint_db.py
 
