@@ -29,7 +29,7 @@ rm ../anki/blueprint_study_sessions.py
 cp ../qt/tools/old/build_ui.py ../anki/qt/tools/
 
 # Step 4: Run the Docker container
-docker run -d -p 5001:5001 --name anki-api anki-api
+docker run -d -p 5001:5001 --name anki-api --restart unless-stopped anki-api
 
 # Give the container some time to start
 sleep 10
