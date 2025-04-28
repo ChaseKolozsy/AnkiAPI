@@ -128,7 +128,7 @@ def study():
             # Extract fields and media files using the helper function
             media_files = process_media_files(fields_data, media_path)
 
-            return jsonify({"front": fields_data, "card_id": current_card.id, "media_files": media_files}), 200
+            return jsonify({"front": fields_data, "card_id": current_card.id, "media_files": media_files}), 200, {'Content-Type': 'application/json; charset=utf-8', 'ensure_ascii': False}
 
         elif action == 'flip':
             if current_card is None:
@@ -151,7 +151,7 @@ def study():
 
             # Extract fields and media files using the helper function
             media_files = process_media_files(fields_data, media_path)
-            return jsonify({"back": fields_data, "ease_options": ease_dict, "media_files": media_files}), 200
+            return jsonify({"back": fields_data, "ease_options": ease_dict, "media_files": media_files}), 200, {'Content-Type': 'application/json; charset=utf-8', 'ensure_ascii': False}
 
         elif action in ['1', '2', '3', '4']:
             if current_card is None:
@@ -197,7 +197,7 @@ def study():
             # Extract media references
             media_files = process_media_files(fields_data, media_path)
 
-            return jsonify({"front": fields_data, "card_id": current_card.id, "time_taken_last_card": current_card.time_taken(capped=False), "media_files": media_files}), 200
+            return jsonify({"front": fields_data, "card_id": current_card.id, "time_taken_last_card": current_card.time_taken(capped=False), "media_files": media_files}), 200, {'Content-Type': 'application/json; charset=utf-8', 'ensure_ascii': False}
 
         elif action == 'close':
             if collection is not None:
@@ -205,13 +205,13 @@ def study():
                 collection = None
                 scheduler = None
                 current_card = None
-            return jsonify({"message": "Collection closed."}), 200
+            return jsonify({"message": "Collection closed."}), 200, {'Content-Type': 'application/json; charset=utf-8', 'ensure_ascii': False}
 
         else:
-            return jsonify({"error": "Invalid action."}), 400
+            return jsonify({"error": "Invalid action."}), 400, {'Content-Type': 'application/json; charset=utf-8', 'ensure_ascii': False}
 
     except Exception as e:
-        return jsonify({"error": f"An error occurred: {e}"}), 500
+        return jsonify({"error": f"An error occurred: {e}"}), 500, {'Content-Type': 'application/json; charset=utf-8', 'ensure_ascii': False}
 
 @study_sessions.route('/api/custom-study', methods=['POST'])
 def custom_study():
