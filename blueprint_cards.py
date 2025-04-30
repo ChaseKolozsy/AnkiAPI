@@ -983,6 +983,7 @@ def get_cards_by_ease():
     min_factor = data.get('min_factor', 2000)  # Minimum ease factor (stored as permille, 2500 = 250%)
     max_factor = data.get('max_factor', 2750)  # Maximum ease factor (stored as permille, 2500 = 250%)
     min_ratio = data.get('min_ratio', 0.2)  # Minimum reviews/interval ratio
+    max_ratio = data.get('max_ratio', 1.0)  # Maximum reviews/interval ratio
     include_suspended = data.get('include_suspended', False)  # Whether to include suspended cards
     include_fields = data.get('include_fields', True)  # Whether to include field contents
     
@@ -1021,7 +1022,8 @@ def get_cards_by_ease():
             if (reviews >= min_reviews and 
                 factor >= min_factor and 
                 factor <= max_factor and 
-                ratio >= min_ratio):
+                ratio >= min_ratio and
+                ratio <= max_ratio):
                 
                 note = col.get_note(card.nid)
                 card_data = {
