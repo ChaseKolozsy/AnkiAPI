@@ -747,7 +747,7 @@ def get_cards_by_state(deck_id):
             col.close()
         return jsonify({"error": str(e)}), 500
 
-@cards.route('/api/cards/<deck_id>/by-state', methods=['GET'])
+@cards.route('/api/cards/<deck_id>/by-state-without-fields', methods=['GET'])
 def get_cards_by_state_without_fields(deck_id):
     data = request.json
     state = data.get('state')
@@ -810,33 +810,29 @@ def get_cards_by_tag_and_state():
     queue_type = state_map[state]
 
     try:
-        # Find notes with the given tag
         note_ids = col.find_notes(f"tag:{tag}")
-        cards_by_tag = []
-        cards_by_state = []
+        cards = []
         for note_id in note_ids:
             card_ids = col.card_ids_of_note(note_id)
             for card_id in card_ids:
                 card = col.get_card(CardId(card_id))
                 note = col.get_note(note_id)
                 field_contents = {field_name: note[field_name] for field_name in note.keys()}
-                card_info = {
-                    "id": card.id,
-                    "note_id": card.nid,
-                    "deck_id": card.did,
-                    "fields": field_contents,
-                    "queue": card.queue
-                }
-                cards_by_tag.append(card_info)
                 if card.queue == queue_type:
-                    cards_by_state.append(card_info)
+                    cards.append({
+                        "id": card.id,
+                        "note_id": card.nid,
+                        "deck_id": card.did,
+                        "fields": field_contents,
+                        "queue": card.queue
+                    })
         col.close()
-        return jsonify({"cards_by_tag": cards_by_tag, "cards_by_state": cards_by_state}), 200
+        return jsonify(cards), 200
     except Exception as e:
         col.close()
         return jsonify({"error": str(e)}), 500
 
-@cards.route('/api/cards/by-tag-and-state', methods=['GET'])
+@cards.route('/api/cards/by-tag-and-state-without-fields', methods=['GET'])
 def get_cards_by_tag_and_state_without_fields():
     data = request.json
     tag = data.get('tag')
@@ -855,27 +851,23 @@ def get_cards_by_tag_and_state_without_fields():
     queue_type = state_map[state]
 
     try:
-        # Find notes with the given tag
         note_ids = col.find_notes(f"tag:{tag}")
-        cards_by_tag = []
-        cards_by_state = []
+        cards = []
         for note_id in note_ids:
             card_ids = col.card_ids_of_note(note_id)
             for card_id in card_ids:
                 card = col.get_card(CardId(card_id))
                 note = col.get_note(note_id)
                 field_contents = {field_name: note[field_name] for field_name in note.keys()}
-                card_info = {
-                    "id": card.id,
-                    "note_id": card.nid,
-                    "deck_id": card.did,
-                    "queue": card.queue
-                }
-                cards_by_tag.append(card_info)
                 if card.queue == queue_type:
-                    cards_by_state.append(card_info)
+                    cards.append({
+                        "id": card.id,
+                        "note_id": card.nid,
+                        "deck_id": card.did,
+                        "queue": card.queue
+                    })
         col.close()
-        return jsonify({"cards_by_tag": cards_by_tag, "cards_by_state": cards_by_state}), 200
+        return jsonify(cards), 200
     except Exception as e:
         col.close()
         return jsonify({"error": str(e)}), 500
