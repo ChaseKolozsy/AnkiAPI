@@ -965,3 +965,253 @@ def delete_cards_by_deck():
     except Exception as e:
         col.close()
         return jsonify({"error": str(e)}), 500
+
+@cards.route('/api/cards/difficult-cards', methods=['GET'])
+def get_difficult_cards():
+    """
+    Find difficult cards based on predefined criteria:
+    - High number of reviews relative to interval
+    - Low ease factor
+    - Minimum number of reviews
+    """
+    data = request.json
+    username = data.get('username')
+    deck_id = data.get('deck_id')
+    
+    # Parameters for defining difficult cards
+    min_reviews = data.get('min_reviews', 3)  # Minimum number of reviews to consider
+    max_factor = data.get('max_factor', 2000)  # Maximum ease factor (stored as permille, 2500 = 250%)
+    min_ratio = data.get('min_ratio', 0.2)  # Minimum reviews/interval ratio
+    include_suspended = data.get('include_suspended', False)  # Whether to include suspended cards
+    include_fields = data.get('include_fields', True)  # Whether to include field contents
+    
+    if not deck_id or not username:
+        return jsonify({"error": "deck_id and username are required"}), 400
+    
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    col = Collection(collection_path)
+    
+    try:
+        deck_id = int(deck_id)
+        # Get all cards in the deck
+        card_ids = col.decks.cids(DeckId(deck_id), children=True)
+        difficult_cards = []
+        
+        for card_id in card_ids:
+            card = col.get_card(CardId(card_id))
+            
+            # Skip suspended cards if not including them
+            if not include_suspended and card.queue == QUEUE_TYPE_SUSPENDED:
+                continue
+                
+            # Skip new cards (no review history)
+            if card.queue == QUEUE_TYPE_NEW:
+                continue
+                
+            # Get card stats - using the correct property names from Anki's codebase
+            reviews = card.reps  # Number of reviews
+            interval = card.ivl  # Current interval
+            factor = card.factor  # Ease factor (stored as permille, 2500 = 250%)
+            
+            # Calculate ratio of reviews to interval
+            ratio = reviews / interval if interval > 0 else float('inf')
+            
+            # Check if this card meets the difficult criteria
+            if (reviews >= min_reviews and 
+                factor <= max_factor and 
+                ratio >= min_ratio):
+                
+                note = col.get_note(card.nid)
+                card_data = {
+                    "id": card.id,
+                    "note_id": card.nid,
+                    "deck_id": card.did,
+                    "queue": card.queue,
+                    "ease_factor": factor / 10,  # Convert to percentage (250 = 250%)
+                    "interval": interval,
+                    "reviews": reviews,
+                    "lapses": card.lapses,
+                    "review_to_interval_ratio": ratio,
+                    "tags": note.tags
+                }
+                
+                # Include field contents if requested
+                if include_fields:
+                    card_data["fields"] = {field_name: note[field_name] for field_name in note.keys()}
+                
+                difficult_cards.append(card_data)
+        
+        col.close()
+        return jsonify(difficult_cards), 200
+    except Exception as e:
+        if col:
+            col.close()
+        return jsonify({"error": str(e)}), 500
+
+@cards.route('/api/cards/by-learning-metrics', methods=['GET'])
+def get_cards_by_learning_metrics():
+    """
+    Flexible filtering of cards based on various learning metrics:
+    - Reviews count
+    - Interval length
+    - Ease factor
+    - Review-to-interval ratio
+    - Lapses
+    """
+    data = request.json
+    username = data.get('username')
+    deck_id = data.get('deck_id')
+    
+    # Filter parameters
+    min_reviews = data.get('min_reviews')
+    max_reviews = data.get('max_reviews')
+    min_interval = data.get('min_interval')
+    max_interval = data.get('max_interval')
+    min_factor = data.get('min_factor')
+    max_factor = data.get('max_factor')
+    min_lapses = data.get('min_lapses')
+    max_lapses = data.get('max_lapses')
+    min_ratio = data.get('min_ratio')
+    max_ratio = data.get('max_ratio')
+    include_suspended = data.get('include_suspended', False)
+    include_new = data.get('include_new', False)
+    include_fields = data.get('include_fields', True)
+    limit = data.get('limit', 100)  # Default limit to prevent excessively large responses
+    
+    if not deck_id or not username:
+        return jsonify({"error": "deck_id and username are required"}), 400
+    
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    col = Collection(collection_path)
+    
+    try:
+        deck_id = int(deck_id)
+        # Get all cards in the deck
+        card_ids = col.decks.cids(DeckId(deck_id), children=True)
+        filtered_cards = []
+        
+        for card_id in card_ids:
+            card = col.get_card(CardId(card_id))
+            
+            # Skip suspended cards if not including them
+            if not include_suspended and card.queue == QUEUE_TYPE_SUSPENDED:
+                continue
+                
+            # Skip new cards if not including them
+            if not include_new and card.queue == QUEUE_TYPE_NEW:
+                continue
+                
+            # Get card stats - using the correct property names from Anki's codebase
+            reviews = card.reps
+            interval = card.ivl
+            factor = card.factor / 10  # Convert to percentage (250 = 250%)
+            lapses = card.lapses
+            
+            # Calculate ratio of reviews to interval
+            ratio = reviews / interval if interval > 0 else float('inf')
+            
+            # Apply filters
+            if ((min_reviews is not None and reviews < min_reviews) or
+                (max_reviews is not None and reviews > max_reviews) or
+                (min_interval is not None and interval < min_interval) or
+                (max_interval is not None and interval > max_interval) or
+                (min_factor is not None and factor < min_factor) or
+                (max_factor is not None and factor > max_factor) or
+                (min_lapses is not None and lapses < min_lapses) or
+                (max_lapses is not None and lapses > max_lapses) or
+                (min_ratio is not None and ratio < min_ratio) or
+                (max_ratio is not None and ratio > max_ratio)):
+                continue
+            
+            note = col.get_note(card.nid)
+            card_data = {
+                "id": card.id,
+                "note_id": card.nid,
+                "deck_id": card.did,
+                "queue": card.queue,
+                "ease_factor": factor,
+                "interval": interval,
+                "reviews": reviews,
+                "lapses": lapses,
+                "review_to_interval_ratio": ratio,
+                "tags": note.tags
+            }
+            
+            # Include field contents if requested
+            if include_fields:
+                card_data["fields"] = {field_name: note[field_name] for field_name in note.keys()}
+            
+            filtered_cards.append(card_data)
+            
+            # Apply limit
+            if len(filtered_cards) >= limit:
+                break
+        
+        col.close()
+        return jsonify(filtered_cards), 200
+    except Exception as e:
+        if col:
+            col.close()
+        return jsonify({"error": str(e)}), 500
+
+@cards.route('/api/cards/reset-difficult', methods=['POST'])
+def reset_difficult_cards():
+    """
+    Find and reset cards that meet the difficult criteria.
+    This can help break the 'ease hell' cycle by giving problematic cards a fresh start.
+    """
+    data = request.json
+    username = data.get('username')
+    deck_id = data.get('deck_id')
+    
+    # Parameters for defining difficult cards to reset
+    min_reviews = data.get('min_reviews', 5)
+    max_factor = data.get('max_factor', 1800)  # Lower threshold than just viewing
+    min_ratio = data.get('min_ratio', 0.3)     # Higher threshold than just viewing
+    min_lapses = data.get('min_lapses', 3)     # Cards that have lapsed multiple times
+    
+    if not deck_id or not username:
+        return jsonify({"error": "deck_id and username are required"}), 400
+    
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    col = Collection(collection_path)
+    
+    try:
+        deck_id = int(deck_id)
+        card_ids = col.decks.cids(DeckId(deck_id), children=True)
+        cards_to_reset = []
+        
+        for card_id in card_ids:
+            card = col.get_card(CardId(card_id))
+            
+            # Skip new cards
+            if card.queue == QUEUE_TYPE_NEW:
+                continue
+                
+            reviews = card.reps
+            interval = card.ivl
+            factor = card.factor
+            lapses = card.lapses
+            
+            ratio = reviews / interval if interval > 0 else float('inf')
+            
+            if (reviews >= min_reviews and 
+                factor <= max_factor and 
+                ratio >= min_ratio and
+                lapses >= min_lapses):
+                cards_to_reset.append(card_id)
+        
+        if cards_to_reset:
+            col.sched.schedule_cards_as_new(cards_to_reset)
+            col.close()
+            return jsonify({
+                "message": f"Reset {len(cards_to_reset)} difficult cards",
+                "cards_reset": len(cards_to_reset)
+            }), 200
+        else:
+            col.close()
+            return jsonify({"message": "No difficult cards found that meet the criteria"}), 200
+    except Exception as e:
+        if col:
+            col.close()
+        return jsonify({"error": str(e)}), 500
