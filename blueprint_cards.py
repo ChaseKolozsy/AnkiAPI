@@ -966,8 +966,8 @@ def delete_cards_by_deck():
         col.close()
         return jsonify({"error": str(e)}), 500
 
-@cards.route('/api/cards/difficult-cards', methods=['GET'])
-def get_difficult_cards():
+@cards.route('/api/cards/by-ease', methods=['GET'])
+def get_cards_by_ease():
     """
     Find difficult cards based on predefined criteria:
     - High number of reviews relative to interval
@@ -980,7 +980,8 @@ def get_difficult_cards():
     
     # Parameters for defining difficult cards
     min_reviews = data.get('min_reviews', 3)  # Minimum number of reviews to consider
-    max_factor = data.get('max_factor', 2000)  # Maximum ease factor (stored as permille, 2500 = 250%)
+    min_factor = data.get('min_factor', 2000)  # Minimum ease factor (stored as permille, 2500 = 250%)
+    max_factor = data.get('max_factor', 2750)  # Maximum ease factor (stored as permille, 2500 = 250%)
     min_ratio = data.get('min_ratio', 0.2)  # Minimum reviews/interval ratio
     include_suspended = data.get('include_suspended', False)  # Whether to include suspended cards
     include_fields = data.get('include_fields', True)  # Whether to include field contents
@@ -1018,6 +1019,7 @@ def get_difficult_cards():
             
             # Check if this card meets the difficult criteria
             if (reviews >= min_reviews and 
+                factor >= min_factor and 
                 factor <= max_factor and 
                 ratio >= min_ratio):
                 
