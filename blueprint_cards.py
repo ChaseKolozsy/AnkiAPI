@@ -747,6 +747,50 @@ def get_cards_by_state(deck_id):
             col.close()
         return jsonify({"error": str(e)}), 500
 
+@cards.route('/api/cards/<deck_id>/by-state', methods=['GET'])
+def get_cards_by_state_without_fields(deck_id):
+    data = request.json
+    state = data.get('state')
+    username = data.get('username')
+
+    if not state:
+        return jsonify({"error": "State parameter is required"}), 400
+
+
+    if state not in state_map:
+        return jsonify({"error": "Invalid state"}), 400
+
+    queue_type = state_map[state]
+
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    col = Collection(collection_path)
+
+    try:
+        deck_id = int(deck_id)
+        # Find cards with the specified state
+        card_ids = col.decks.cids(DeckId(deck_id), children=True)
+        cards = []
+
+        for card_id in card_ids:
+            card = col.get_card(CardId(card_id))
+            note = col.get_note(card.nid)
+            field_contents = {field_name: note[field_name] for field_name in note.keys()}
+            if card.queue == queue_type:
+                cards.append({
+                    "id": card.id,
+                    "note_id": card.nid,
+                    "deck_id": card.did,
+                    "queue": card.queue,
+                    "tags": note.tags
+                })
+
+        col.close()
+        return jsonify(cards), 200
+    except Exception as e:
+        if col:
+            col.close()
+        return jsonify({"error": str(e)}), 500
+
 @cards.route('/api/cards/by-tag-and-state', methods=['GET'])
 def get_cards_by_tag_and_state():
     data = request.json
@@ -781,6 +825,50 @@ def get_cards_by_tag_and_state():
                     "note_id": card.nid,
                     "deck_id": card.did,
                     "fields": field_contents,
+                    "queue": card.queue
+                }
+                cards_by_tag.append(card_info)
+                if card.queue == queue_type:
+                    cards_by_state.append(card_info)
+        col.close()
+        return jsonify({"cards_by_tag": cards_by_tag, "cards_by_state": cards_by_state}), 200
+    except Exception as e:
+        col.close()
+        return jsonify({"error": str(e)}), 500
+
+@cards.route('/api/cards/by-tag-and-state', methods=['GET'])
+def get_cards_by_tag_and_state_without_fields():
+    data = request.json
+    tag = data.get('tag')
+    state = data.get('state')
+    username = data.get('username')
+
+    if not tag or not state:
+        return jsonify({"error": "Tag and State parameters are required"}), 400
+
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    col = Collection(collection_path)
+
+    if state not in state_map:
+        return jsonify({"error": "Invalid state"}), 400
+
+    queue_type = state_map[state]
+
+    try:
+        # Find notes with the given tag
+        note_ids = col.find_notes(f"tag:{tag}")
+        cards_by_tag = []
+        cards_by_state = []
+        for note_id in note_ids:
+            card_ids = col.card_ids_of_note(note_id)
+            for card_id in card_ids:
+                card = col.get_card(CardId(card_id))
+                note = col.get_note(note_id)
+                field_contents = {field_name: note[field_name] for field_name in note.keys()}
+                card_info = {
+                    "id": card.id,
+                    "note_id": card.nid,
+                    "deck_id": card.did,
                     "queue": card.queue
                 }
                 cards_by_tag.append(card_info)
