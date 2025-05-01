@@ -99,15 +99,15 @@ def study():
     deck_id = data.get('deck_id')
     username = data.get('username')
 
+    # Ensure collection is open
+    if collection is None:
+        collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+        media_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.media")
+        collection = Collection(collection_path)
+        scheduler = V3Scheduler(collection)
 
     try:
         if action == 'start':
-            collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
-            media_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.media")
-            if collection is None:
-                collection = Collection(collection_path)
-                scheduler = V3Scheduler(collection)
-
             collection.decks.select(deck_id)
             queued_cards = scheduler.get_queued_cards(fetch_limit=1)
             if not queued_cards.cards:
@@ -256,8 +256,6 @@ def custom_study():
             if deck.name == custom_study_deck_name:
                 created_deck_id = deck.id
                 break
-        
-        collection.close()
     except Exception as e:
         return jsonify({"error": f"Error creating custom study session: {e}"}), 500
 
