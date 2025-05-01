@@ -235,7 +235,6 @@ def custom_study():
     except Exception as e:
         return jsonify({"error": f"Error selecting deck: {e}"}), 500
     
-
     try:
         custom_study_request = scheduler_pb2.CustomStudyRequest(
             deck_id=deck_id,
@@ -243,9 +242,29 @@ def custom_study():
         )
         changes = scheduler.custom_study(custom_study_request)
         custom_defaults = scheduler.custom_study_defaults(DeckId(int(deck_id)))
+        
+        # Look for newly created deck ID in the changes string representation
+        created_deck_id = None
+        changes_str = str(changes)
+        
+        # Check if a new deck was created - we need to find the deck ID 
+        # in the response. The Custom Study deck will be named "Custom Study Session"
+        # in the user's locale language.
+        custom_study_deck_name = "Custom Study Session"  # This might need to be translated
+        found_decks = collection.decks.all_names_and_ids()
+        for deck in found_decks:
+            if deck.name == custom_study_deck_name:
+                created_deck_id = deck.id
+                break
+        
         collection.close()
     except Exception as e:
         return jsonify({"error": f"Error creating custom study session: {e}"}), 500
 
-    return jsonify({"message": "Custom study session created successfully.", "changes": str(changes), "custom_defaults": str(custom_defaults)}), 200
+    return jsonify({
+        "message": "Custom study session created successfully.", 
+        "changes": str(changes), 
+        "custom_defaults": str(custom_defaults),
+        "created_deck_id": created_deck_id
+    }), 200
 
