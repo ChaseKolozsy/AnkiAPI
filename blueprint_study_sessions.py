@@ -257,6 +257,7 @@ def custom_study():
                 created_deck_id = deck.id
                 break
     except Exception as e:
+        collection.close()
         return jsonify({"error": f"Error creating custom study session: {e}"}), 500
 
     return jsonify({
