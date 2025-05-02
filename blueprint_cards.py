@@ -671,6 +671,7 @@ def get_cards_by_tag():
     data = request.json
     tag = data.get('tag')
     username = data.get('username')
+    inclusions = data.get('inclusions', None)
 
     if not tag:
         return jsonify({"error": "Tag is required"}), 400
@@ -687,7 +688,10 @@ def get_cards_by_tag():
             for card_id in card_ids:
                 card = col.get_card(CardId(card_id))
                 note = col.get_note(note_id)
-                field_contents = {field_name: note[field_name] for field_name in note.keys()}
+                if inclusions is not None:
+                    field_contents = {field: note[field] for field in inclusions if field in note.keys()}
+                else:
+                    field_contents = {field_name: note[field_name] for field_name in note.keys()}
                 cards.append({
                     "id": card.id,
                     "note_id": card.nid,
@@ -707,6 +711,7 @@ def get_cards_by_state(deck_id):
     data = request.json
     state = data.get('state')
     username = data.get('username')
+    inclusions = data.get('inclusions', None)
 
     if not state:
         return jsonify({"error": "State parameter is required"}), 400
@@ -729,7 +734,10 @@ def get_cards_by_state(deck_id):
         for card_id in card_ids:
             card = col.get_card(CardId(card_id))
             note = col.get_note(card.nid)
-            field_contents = {field_name: note[field_name] for field_name in note.keys()}
+            if inclusions is not None:
+                field_contents = {field: note[field] for field in inclusions if field in note.keys()}
+            else:
+                field_contents = {field_name: note[field_name] for field_name in note.keys()}
             if card.queue == queue_type:
                 cards.append({
                     "id": card.id,
@@ -797,6 +805,7 @@ def get_cards_by_tag_and_state():
     tag = data.get('tag')
     state = data.get('state')
     username = data.get('username')
+    inclusions = data.get('inclusions', None)
 
     if not tag or not state:
         return jsonify({"error": "Tag and State parameters are required"}), 400
@@ -817,7 +826,10 @@ def get_cards_by_tag_and_state():
             for card_id in card_ids:
                 card = col.get_card(CardId(card_id))
                 note = col.get_note(note_id)
-                field_contents = {field_name: note[field_name] for field_name in note.keys()}
+                if inclusions is not None:
+                    field_contents = {field: note[field] for field in inclusions if field in note.keys()}
+                else:
+                    field_contents = {field_name: note[field_name] for field_name in note.keys()}
                 if card.queue == queue_type:
                     cards.append({
                         "id": card.id,
@@ -977,6 +989,7 @@ def get_cards_by_ease():
     data = request.json
     username = data.get('username')
     deck_id = data.get('deck_id')
+    inclusions = data.get('inclusions', None)
     
     # Parameters for defining difficult cards
     min_reviews = data.get('min_reviews', 3)  # Minimum number of reviews to consider
@@ -1041,7 +1054,11 @@ def get_cards_by_ease():
                 
                 # Include field contents if requested
                 if include_fields:
-                    card_data["fields"] = {field_name: note[field_name] for field_name in note.keys()}
+                    if inclusions is not None:
+                        field_contents = {field: note[field] for field in inclusions if field in note.keys()}
+                    else:
+                        field_contents = {field_name: note[field_name] for field_name in note.keys()}
+                    card_data["fields"] = field_contents
                 
                 difficult_cards.append(card_data)
         
@@ -1065,6 +1082,7 @@ def get_cards_by_learning_metrics():
     data = request.json
     username = data.get('username')
     deck_id = data.get('deck_id')
+    inclusions = data.get('inclusions', None)
     
     # Filter parameters
     min_reviews = data.get('min_reviews')
@@ -1143,7 +1161,11 @@ def get_cards_by_learning_metrics():
             
             # Include field contents if requested
             if include_fields:
-                card_data["fields"] = {field_name: note[field_name] for field_name in note.keys()}
+                if inclusions is not None:
+                    field_contents = {field: note[field] for field in inclusions if field in note.keys()}
+                else:
+                    field_contents = {field_name: note[field_name] for field_name in note.keys()}
+                card_data["fields"] = field_contents
             
             filtered_cards.append(card_data)
             
