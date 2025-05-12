@@ -1241,3 +1241,42 @@ def reset_difficult_cards():
         if col:
             col.close()
         return jsonify({"error": str(e)}), 500
+
+@cards.route('/api/cards/by-note-id/<note_id>', methods=['GET'])
+def get_cards_by_note_id(note_id):
+    data = request.json
+    username = data.get('username')
+    inclusions = data.get('inclusions', None)
+
+    if not username:
+        return jsonify({"error": "Username is required"}), 400
+
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    col = Collection(collection_path)
+
+    try:
+        note_id = int(note_id)
+        card_ids = col.card_ids_of_note(note_id)
+        cards = []
+        for card_id in card_ids:
+            card = col.get_card(card_id)
+            note = col.get_note(note_id)
+            if inclusions is not None:
+                field_contents = {field: note[field] for field in inclusions if field in note.keys()}
+            else:
+                field_contents = {field_name: note[field_name] for field_name in note.keys()}
+            cards.append({
+                "id": card.id,
+                "note_id": card.nid,
+                "deck_id": card.did,
+                "fields": field_contents,
+                "queue": card.queue,
+                "tags": note.tags,
+                "due": getattr(card, 'due', None)
+            })
+        col.close()
+        return jsonify(cards), 200
+    except Exception as e:
+        if col:
+            col.close()
+        return jsonify({"error": str(e)}), 500
