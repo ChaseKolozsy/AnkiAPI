@@ -1244,7 +1244,7 @@ def reset_difficult_cards():
 
 @cards.route('/api/cards/by-note-id/<note_id>', methods=['GET'])
 def get_cards_by_note_id(note_id):
-    data = request.json
+    data = request.json or {}
     username = data.get('username')
     inclusions = data.get('inclusions', None)
 
@@ -1252,15 +1252,27 @@ def get_cards_by_note_id(note_id):
         return jsonify({"error": "Username is required"}), 400
 
     collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
-    col = Collection(collection_path)
+    col = None
 
     try:
         note_id = int(note_id)
+        col = Collection(collection_path)
+        # First check if the note exists
+        try:
+            note = col.get_note(note_id)
+        except Exception:
+            col.close()
+            return jsonify({"error": f"Note with ID {note_id} not found"}), 404
+            
         card_ids = col.card_ids_of_note(note_id)
+        
+        if not card_ids:
+            col.close()
+            return jsonify({"error": f"No cards found for note ID {note_id}"}), 404
+            
         cards = []
         for card_id in card_ids:
             card = col.get_card(card_id)
-            note = col.get_note(note_id)
             if inclusions is not None:
                 field_contents = {field: note[field] for field in inclusions if field in note.keys()}
             else:
@@ -1276,6 +1288,10 @@ def get_cards_by_note_id(note_id):
             })
         col.close()
         return jsonify(cards), 200
+    except ValueError:
+        if col:
+            col.close()
+        return jsonify({"error": "Invalid note ID format"}), 400
     except Exception as e:
         if col:
             col.close()
