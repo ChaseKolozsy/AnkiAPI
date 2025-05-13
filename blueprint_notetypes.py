@@ -486,3 +486,76 @@ def delete_notetype(notetype_id):
     except Exception as e:
         col.close()
         return jsonify({"error": str(e)}), 500
+
+@notetypes.route('/api/notetypes/update-note/<note_id>', methods=['POST'])
+def update_note_fields(note_id):
+    """
+    Update the fields of a note.
+    
+    Args:
+        note_id: The ID of the note to update
+        
+    Request body:
+        username: The username of the profile
+        fields: Dictionary of field names and their new values
+        tags: Optional list of tags to set for the note
+    """
+    data = request.json
+    username = data.get('username')
+    fields = data.get('fields')
+    tags = data.get('tags')
+    
+    if not username:
+        return jsonify({"error": "Username is required"}), 400
+    if not fields and tags is None:
+        return jsonify({"error": "At least fields or tags must be provided"}), 400
+    
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    col = None
+    
+    try:
+        note_id = int(note_id)
+        col = Collection(collection_path)
+        
+        # Check if the note exists
+        try:
+            note = col.get_note(note_id)
+        except Exception:
+            col.close()
+            return jsonify({"error": f"Note with ID {note_id} not found"}), 404
+        
+        # Update fields
+        if fields:
+            for field_name, new_value in fields.items():
+                if field_name in note:
+                    note[field_name] = new_value
+                else:
+                    col.close()
+                    return jsonify({"error": f"Field '{field_name}' does not exist in this note"}), 400
+        
+        # Update tags if provided
+        if tags is not None:
+            note.tags = tags
+        
+        # Save the note
+        col.update_note(note)
+        
+        # Get updated note for response
+        updated_note = col.get_note(note_id)
+        field_contents = {field_name: updated_note[field_name] for field_name in updated_note.keys()}
+        
+        col.close()
+        return jsonify({
+            "message": "Note updated successfully",
+            "note_id": note_id,
+            "fields": field_contents,
+            "tags": updated_note.tags
+        }), 200
+    except ValueError:
+        if col:
+            col.close()
+        return jsonify({"error": "Invalid note ID format"}), 400
+    except Exception as e:
+        if col:
+            col.close()
+        return jsonify({"error": str(e)}), 500
