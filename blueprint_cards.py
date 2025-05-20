@@ -1296,3 +1296,201 @@ def get_cards_by_note_id(note_id):
         if col:
             col.close()
         return jsonify({"error": str(e)}), 500
+
+@cards.route('/api/cards/by-field-content', methods=['GET'])
+def get_cards_by_field_content():
+    data = request.json
+    username = data.get('username')
+    field_name = data.get('field_name')
+    field_content = data.get('field_content')
+    exact_match = data.get('exact_match', True)
+    deck_id = data.get('deck_id')
+    inclusions = data.get('inclusions', None)
+
+    if not username or not field_name or not field_content:
+        return jsonify({"error": "username, field_name, and field_content are required"}), 400
+
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    col = Collection(collection_path)
+
+    try:
+        # Construct the search query based on exact_match parameter
+        if exact_match:
+            # For exact match, we use the "field:content" syntax
+            search_query = f"\"{field_name}:{field_content}\""
+        else:
+            # For partial match, we use the "field:*content*" syntax
+            search_query = f"\"{field_name}:*{field_content}*\""
+        
+        # Add deck restriction if deck_id is provided
+        if deck_id:
+            deck_id = int(deck_id)
+            search_query = f"deck:{deck_id} {search_query}"
+        
+        # Find notes matching the search query
+        note_ids = col.find_notes(search_query)
+        
+        cards = []
+        for note_id in note_ids:
+            card_ids = col.card_ids_of_note(note_id)
+            note = col.get_note(note_id)
+            
+            # Filter fields based on inclusions if provided
+            if inclusions is not None:
+                field_contents = {field: note[field] for field in inclusions if field in note.keys()}
+            else:
+                field_contents = {field_name: note[field_name] for field_name in note.keys()}
+            
+            for card_id in card_ids:
+                card = col.get_card(CardId(card_id))
+                cards.append({
+                    "id": card.id,
+                    "note_id": card.nid,
+                    "deck_id": card.did,
+                    "fields": field_contents,
+                    "queue": card.queue,
+                    "tags": note.tags
+                })
+        
+        col.close()
+        return jsonify(cards), 200
+    except Exception as e:
+        col.close()
+        return jsonify({"error": str(e)}), 500
+
+@cards.route('/api/cards/by-field-substring', methods=['GET'])
+def get_cards_by_field_substring():
+    data = request.json
+    username = data.get('username')
+    field_name = data.get('field_name')
+    substring = data.get('substring')
+    case_sensitive = data.get('case_sensitive', False)
+    deck_id = data.get('deck_id')
+    inclusions = data.get('inclusions', None)
+
+    if not username or not field_name or not substring:
+        return jsonify({"error": "username, field_name, and substring are required"}), 400
+
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    col = Collection(collection_path)
+
+    try:
+        # Construct the search query based on case sensitivity
+        # Note: Anki's regex search is case-insensitive by default
+        search_modifier = "re" if case_sensitive else "re:i"
+        # The regex pattern will search for the substring within the field contents
+        search_query = f"{search_modifier}:{field_name}:.*{substring}.*"
+        
+        # Add deck restriction if deck_id is provided
+        if deck_id:
+            deck_id = int(deck_id)
+            search_query = f"deck:{deck_id} {search_query}"
+        
+        # Find notes matching the search query
+        note_ids = col.find_notes(search_query)
+        
+        cards = []
+        for note_id in note_ids:
+            card_ids = col.card_ids_of_note(note_id)
+            note = col.get_note(note_id)
+            
+            # Filter fields based on inclusions if provided
+            if inclusions is not None:
+                field_contents = {field: note[field] for field in inclusions if field in note.keys()}
+            else:
+                field_contents = {field_name: note[field_name] for field_name in note.keys()}
+            
+            for card_id in card_ids:
+                card = col.get_card(CardId(card_id))
+                cards.append({
+                    "id": card.id,
+                    "note_id": card.nid,
+                    "deck_id": card.did,
+                    "fields": field_contents,
+                    "queue": card.queue,
+                    "tags": note.tags
+                })
+        
+        col.close()
+        return jsonify(cards), 200
+    except Exception as e:
+        col.close()
+        return jsonify({"error": str(e), "query": search_query}), 500
+
+@cards.route('/api/cards/advanced-field-search', methods=['POST'])
+def advanced_field_search():
+    data = request.json
+    username = data.get('username')
+    field_conditions = data.get('field_conditions', [])
+    join_operator = data.get('join_operator', 'AND')  # 'AND' or 'OR'
+    deck_id = data.get('deck_id')
+    inclusions = data.get('inclusions', None)
+
+    if not username or not field_conditions:
+        return jsonify({"error": "username and field_conditions are required"}), 400
+
+    if join_operator not in ('AND', 'OR'):
+        return jsonify({"error": "join_operator must be 'AND' or 'OR'"}), 400
+
+    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    col = Collection(collection_path)
+
+    try:
+        # Build the search query from field conditions
+        condition_queries = []
+        
+        for condition in field_conditions:
+            field_name = condition.get('field_name')
+            operation = condition.get('operation', 'is')  # 'is', 'contains', 'regex'
+            value = condition.get('value')
+            case_sensitive = condition.get('case_sensitive', False)
+            
+            if not field_name or not value:
+                continue
+                
+            if operation == 'is':
+                condition_queries.append(f"\"{field_name}:{value}\"")
+            elif operation == 'contains':
+                condition_queries.append(f"\"{field_name}:*{value}*\"")
+            elif operation == 'regex':
+                re_modifier = "re" if case_sensitive else "re:i"
+                condition_queries.append(f"{re_modifier}:{field_name}:{value}")
+        
+        # Join the conditions with the specified operator
+        search_query = f" {join_operator} ".join(condition_queries)
+        
+        # Add deck restriction if deck_id is provided
+        if deck_id:
+            deck_id = int(deck_id)
+            search_query = f"deck:{deck_id} {search_query}"
+        
+        # Find notes matching the search query
+        note_ids = col.find_notes(search_query)
+        
+        cards = []
+        for note_id in note_ids:
+            card_ids = col.card_ids_of_note(note_id)
+            note = col.get_note(note_id)
+            
+            # Get field contents
+            if inclusions is not None:
+                field_contents = {field: note[field] for field in inclusions if field in note.keys()}
+            else:
+                field_contents = {field_name: note[field_name] for field_name in note.keys()}
+            
+            for card_id in card_ids:
+                card = col.get_card(CardId(card_id))
+                cards.append({
+                    "id": card.id,
+                    "note_id": card.nid,
+                    "deck_id": card.did,
+                    "fields": field_contents,
+                    "queue": card.queue,
+                    "tags": note.tags
+                })
+        
+        col.close()
+        return jsonify({"cards": cards, "query": search_query, "count": len(cards)}), 200
+    except Exception as e:
+        col.close()
+        return jsonify({"error": str(e), "query": search_query}), 500
