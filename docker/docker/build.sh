@@ -14,8 +14,8 @@ cp ../blueprint_cards.py ../anki/
 cp ../blueprint_study_sessions.py ../anki/
 cp ../qt/tools/new/build_ui.py ../anki/qt/tools/
 
-# Step 2: Rebuild the Docker image
-docker build --no-cache --tag anki-api --file Dockerfile ../anki/
+# Step 2: Rebuild the Docker image from source
+docker build --no-cache --tag anki-api --file ../Dockerfile.source ../anki/
 
 # Step 3: Clean up copied files
 rm ../anki/anki_api_server.py
@@ -28,7 +28,7 @@ rm ../anki/blueprint_cards.py
 rm ../anki/blueprint_study_sessions.py
 cp ../qt/tools/old/build_ui.py ../anki/qt/tools/
 
-# Step 4: Run the Docker container
+# Run the Docker container in detached mode
 docker run -d -p 5001:5001 --name anki-api --restart unless-stopped anki-api
 
 # Give the container some time to start
@@ -39,8 +39,8 @@ curl -X POST "${API_URL}/users/create/${USERNAME}"
 
 # Check if the user creation was successful
 if [ $? -ne 0 ]; then
-	echo "Failed to create user. Please check the logs for more details."
-	exit 1
+    echo "Failed to create user. Please check the logs for more details."
+    exit 1
 fi
 
 echo "Build and user creation completed successfully."

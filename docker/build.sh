@@ -15,8 +15,8 @@ cp ../blueprint_study_sessions.py ../anki/
 cp ../blueprint_db.py ../anki/
 cp ../qt/tools/new/build_ui.py ../anki/qt/tools/
 
-# Step 2: Rebuild the Docker image
-docker build --no-cache --tag anki-api --file Dockerfile ../anki/
+# Step 2: Build the Docker image from source
+docker build --no-cache --tag anki-api --file Dockerfile.source ../anki/
 
 # Step 3: Clean up copied files
 rm ../anki/anki_api_server.py
@@ -32,4 +32,3 @@ cp ../qt/tools/old/build_ui.py ../anki/qt/tools/
 
 # Step 4: Run the Docker container
 docker run -p 5001:5001 --cpus=1 --name anki-api anki-api
-

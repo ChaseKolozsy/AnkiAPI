@@ -1,45 +1,37 @@
+# This Dockerfile builds Anki from a source tree provided as the build context.
+# Use it with context set to the cloned anki repo (../anki).
+
 ARG PYTHON_VERSION="3.9"
 ARG DEBIAN_FRONTEND="noninteractive"
-ARG ANKI_COMMIT
 
-# Stage 1: build Anki from the specified commit
-FROM python:${PYTHON_VERSION} AS build
-
-# Bazelisk for Node packaging, and basic build deps
+# Build anki.
+FROM python:$PYTHON_VERSION AS build
 RUN curl -fsSL https://github.com/bazelbuild/bazelisk/releases/download/v1.7.4/bazelisk-linux-amd64 \
     > /usr/local/bin/bazel \
     && chmod +x /usr/local/bin/bazel \
     && ln -s /usr/local/bin/python /usr/bin/python
+WORKDIR /opt/anki
+COPY . .
 
+# Install dependencies including ninja-build and rsync
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
     curl \
-    git \
     ninja-build \
     rsync \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /opt
-RUN git clone --recursive https://github.com/ankitects/anki.git
-WORKDIR /opt/anki
-RUN git fetch --all \
-    && git checkout ${ANKI_COMMIT} \
-    && git submodule update --init --recursive
-
-# Override Qt build tool with the provided, cross-arch friendly version
-COPY qt/tools/new/build_ui.py /opt/anki/qt/tools/build_ui.py
-
-# Install Rust and build
+# Install Rust and build the project
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     && chmod +x $HOME/.cargo/env
 RUN /bin/bash -c "source $HOME/.cargo/env && RUST_BACKTRACE=1 ./tools/build"
 
-# Stage 2: create venv and install built wheels
+# Install pre-compiled Anki into a venv
 FROM python:${PYTHON_VERSION}-slim as installer
 WORKDIR /opt/anki/
 COPY --from=build /opt/anki/out/wheels/ wheels/
 RUN python -m venv venv \
-    && ./venv/bin/python -m pip install --no-cache-dir --upgrade pip setuptools wheel \
+    && ./venv/bin/python -m pip install --no-cache-dir setuptools wheel \
     && ./venv/bin/python -m pip install --no-cache-dir /opt/anki/wheels/*.whl \
     && ./venv/bin/python -m pip install --no-cache-dir debugpy
 
@@ -54,7 +46,7 @@ COPY blueprint_cards.py /opt/anki/venv/
 COPY blueprint_db.py /opt/anki/venv/
 COPY blueprint_study_sessions.py /opt/anki/venv/
 
-# Stage 3: final minimal runtime image
+# Final runtime image
 FROM python:${PYTHON_VERSION}-slim as final
 COPY --from=installer /opt/anki/venv /opt/anki/venv
 ENV PATH=/opt/anki/venv/bin:$PATH
@@ -86,15 +78,13 @@ RUN apt-get update \
     libxtst6 \
     curl \
     && rm -rf /var/lib/apt/lists/*
-
 RUN useradd --create-home anki
 USER anki
 WORKDIR /work
 
-# Ports
+# Ports for API and debugpy
 EXPOSE 5001
 EXPOSE 5678
 
 ENTRYPOINT ["/opt/anki/venv/bin/python", "/opt/anki/venv/anki_api_server.py"]
 
-LABEL maintainer="AnkiApi Docker Maintainers"
