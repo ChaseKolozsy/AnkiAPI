@@ -22,14 +22,16 @@ RUN apt-get update \
     rsync \
     && rm -rf /var/lib/apt/lists/*
 
+# Provide a git wrapper that fakes buildhash queries but delegates other commands
+ARG BUILDHASH
+RUN bash -lc 'cat >/usr/local/bin/git <<"WRAP"\n#!/bin/sh\nif [ "$1" = "rev-parse" ] && [ "$2" = "--short=8" ] && [ "$3" = "HEAD" ]; then\n  echo "${BUILDHASH:-00000000}"\nelse\n  exec /usr/bin/git "$@"\nfi\nWRAP\nchmod +x /usr/local/bin/git'
+
 # Install Rust and build the project
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     && chmod +x $HOME/.cargo/env
-ARG BUILDHASH
 # Provide a dummy buildhash so Anki's build script doesn't require git
 RUN mkdir -p out && bash -lc 'echo ${BUILDHASH:-00000000} > out/buildhash'
-# Run build in offline mode to avoid invoking git inside container
-RUN /bin/bash -c "source $HOME/.cargo/env && OFFLINE_BUILD=1 RUST_BACKTRACE=1 ./tools/build"
+RUN /bin/bash -c "source $HOME/.cargo/env && RUST_BACKTRACE=1 ./tools/build"
 
 # Install pre-compiled Anki into a venv
 FROM python:${PYTHON_VERSION}-slim as installer
