@@ -2,9 +2,8 @@
 
 set -euo pipefail
 
-# Defaults for testing: different image/container names and port
-IMAGE_NAME="${IMAGE_NAME:-anki-api-test}"
-CONTAINER_NAME="${CONTAINER_NAME:-anki-api-test}"
+IMAGE_NAME="${IMAGE_NAME:-anki-api}"
+CONTAINER_NAME="${CONTAINER_NAME:-anki-api}"
 HOST_PORT="${HOST_PORT:-5001}"
 # Optional override for host Anki2 dir; if empty, auto-detect by OS
 HOST_ANKI2_DIR="${HOST_ANKI2_DIR:-}"
