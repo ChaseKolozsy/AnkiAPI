@@ -17,6 +17,7 @@ COPY . .
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
     curl \
+    git \
     ninja-build \
     rsync \
     && rm -rf /var/lib/apt/lists/*
@@ -24,6 +25,9 @@ RUN apt-get update \
 # Install Rust and build the project
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     && chmod +x $HOME/.cargo/env
+ARG BUILDHASH
+# Provide a dummy buildhash so Anki's build script doesn't require git
+RUN mkdir -p out && bash -lc 'echo ${BUILDHASH:-00000000} > out/buildhash'
 RUN /bin/bash -c "source $HOME/.cargo/env && RUST_BACKTRACE=1 ./tools/build"
 
 # Install pre-compiled Anki into a venv
@@ -87,4 +91,3 @@ EXPOSE 5001
 EXPOSE 5678
 
 ENTRYPOINT ["/opt/anki/venv/bin/python", "/opt/anki/venv/anki_api_server.py"]
-
