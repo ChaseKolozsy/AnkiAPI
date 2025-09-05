@@ -60,6 +60,35 @@ To set up the AnkiApi project, follow these steps:
 3. Use the provided API endpoints to interact with your Anki database for various functionalities.
 4. To rebuild the docker container, run the `rebuild.sh` script, wait for it to load the docker container in interactive mode, then, open a new terminal and run the `restore.sh` script. This will delete all Docker containers and images that have anki-api in their name. It also deletes dangling images and caches so comment that out if you don't want to delete those. This will preserve the collection from the destroyed container and restore it when the new container is created. This is done automatically in a 2 step process, `rebuild.sh` and `restore.sh`.
 
+## Link Host Collection (Volume Mount)
+
+By default, `docker/build.sh` mounts your host's Anki collection into the container so both share the same data directory. The script auto-detects your OS and picks the common Anki2 location:
+
+- Linux: `$HOME/.local/share/Anki2`
+- macOS: `$HOME/Library/Application Support/Anki2`
+- Windows (Docker Desktop, Git Bash/PowerShell): `%APPDATA%\Anki2`
+
+The path is bound to `/home/anki/.local/share/Anki2` inside the container. Example mapping on Linux:
+
+```
+docker run ... \
+  -v "$HOME/.local/share/Anki2:/home/anki/.local/share/Anki2" \
+  anki-api
+```
+
+Notes:
+
+- To override the detected path, pass `-m <host_anki2_dir>` to `build.sh`:
+  - `./docker/build.sh -m "/custom/path/to/Anki2"`
+- Docker Desktop may prompt to allow file sharing for the mounted folder/drive; approve it in Settings if needed.
+- The server listens on container port `5001`. The script maps host `5001:5001` by default. Access the API at `http://localhost:5001/api`.
+
+Quick test after build:
+
+```
+curl -X POST "http://localhost:5001/api/users/create/User%201"
+```
+
 ## Contributing
 
 We welcome contributions to improve AnkiApi! Please fork the repository and submit pull requests.
