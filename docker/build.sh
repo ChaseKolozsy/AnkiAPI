@@ -25,50 +25,34 @@ done
 
 echo "Building image '${IMAGE_NAME}' and running container '${CONTAINER_NAME}' on port ${HOST_PORT} -> 5001"
 
-# Step 1: Prepare an isolated build context that includes a real .git dir
-ANKI_SRC="../anki"
-BUILD_CTX=$(mktemp -d -p . anki-build-XXXXXX)
-
-# Sync source (excluding .git placeholder)
-if command -v rsync >/dev/null 2>&1; then
-  rsync -a --delete --exclude='.git' "${ANKI_SRC}/" "${BUILD_CTX}/"
+# Fast path: build a reusable base for the current Anki commit, then the app image
+ANKI_DIR="../anki"
+if git -C "${ANKI_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  ANKI_COMMIT=$(git -C "${ANKI_DIR}" rev-parse HEAD)
 else
-  echo "rsync not found; falling back to cp -a (slower)" >&2
-  mkdir -p "${BUILD_CTX}"
-  (cd "${ANKI_SRC}" && find . -path './.git' -prune -o -print0 | xargs -0 -I{} bash -c 'src="{}"; dst="${0%/}/$src"; mkdir -p "$(dirname "$dst")"; [ -d "$src" ] && mkdir -p "$dst" || cp -a "$src" "$dst"' "${BUILD_CTX}")
+  echo "Error: ${ANKI_DIR} is not a git repository. Ensure Anki is cloned as a git repo/submodule." >&2
+  exit 1
 fi
 
-# Inject API server files into the build context
-cp ../anki_api_server.py "${BUILD_CTX}/"
-cp ../blueprint_decks.py "${BUILD_CTX}/"
-cp ../blueprint_exports.py "${BUILD_CTX}/"
-cp ../blueprint_imports.py "${BUILD_CTX}/"
-cp ../blueprint_notetypes.py "${BUILD_CTX}/"
-cp ../blueprint_users.py "${BUILD_CTX}/"
-cp ../blueprint_cards.py "${BUILD_CTX}/"
-cp ../blueprint_study_sessions.py "${BUILD_CTX}/"
-cp ../blueprint_db.py "${BUILD_CTX}/"
-cp ../qt/tools/new/build_ui.py "${BUILD_CTX}/qt/tools/"
+echo "Target Anki commit: ${ANKI_COMMIT}"
 
-# Resolve and copy the actual git dir so Anki's build can invoke git
-if git -C "${ANKI_SRC}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  GIT_DIR=$(git -C "${ANKI_SRC}" rev-parse --git-dir)
-  # Make absolute if necessary
-  if [[ "${GIT_DIR}" != /* ]]; then
-    GIT_DIR=$(cd "${ANKI_SRC}" && cd "${GIT_DIR}" && pwd)
-  fi
-  if [ -d "${GIT_DIR}" ]; then
-    mkdir -p "${BUILD_CTX}/.git"
-    rsync -a "${GIT_DIR}/" "${BUILD_CTX}/.git/"
-  fi
+if docker image inspect "anki-core:${ANKI_COMMIT}" >/dev/null 2>&1; then
+  echo "Using cached base image anki-core:${ANKI_COMMIT}"
+else
+  echo "Building base image anki-core:${ANKI_COMMIT} (one-time)"
+  docker build --no-cache \
+    --tag "anki-core:${ANKI_COMMIT}" \
+    --build-arg ANKI_COMMIT="${ANKI_COMMIT}" \
+    --file Dockerfile.base \
+    ..
 fi
 
-# Step 2: Build the Docker image from source using the isolated context
-docker build --no-cache --tag "${IMAGE_NAME}" --file Dockerfile.source "${BUILD_CTX}"
+docker build \
+  --tag "${IMAGE_NAME}" \
+  --build-arg ANKI_COMMIT="${ANKI_COMMIT}" \
+  --file Dockerfile.app \
+  ..
 
-# Step 3: Clean up the temporary build context
-rm -rf "${BUILD_CTX}"
-
-# Step 4: Run the Docker container (replace if exists)
+# Run the Docker container (replace if exists)
 docker rm -f "${CONTAINER_NAME}" >/dev/null 2>&1 || true
 docker run -p "${HOST_PORT}:5001" --cpus=1 --name "${CONTAINER_NAME}" "${IMAGE_NAME}"
