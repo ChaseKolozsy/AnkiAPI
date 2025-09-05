@@ -8,7 +8,7 @@ set -euo pipefail
 #   ./export_image.sh [-i image[:tag]] [-o out.tar.gz]
 #
 # Defaults:
-#   - image: anki-api-test (as built by build.sh)
+#   - image: anki-api (as built by build.sh)
 #   - out: exports/anki-api-<image>-<date>-<id>.tar.gz
 
 IMAGE_REF="${IMAGE_REF:-}"
@@ -28,7 +28,7 @@ while getopts ":i:o:h" opt; do
   esac
 done
 
-IMAGE_REF=${IMAGE_REF:-anki-api-test}
+IMAGE_REF=${IMAGE_REF:-anki-api}
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "Error: docker not found in PATH" >&2
