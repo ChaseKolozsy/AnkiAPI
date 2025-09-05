@@ -1,0 +1,46 @@
+ARG PYTHON_VERSION="3.9"
+ARG DEBIAN_FRONTEND="noninteractive"
+ARG ANKI_COMMIT
+
+FROM python:${PYTHON_VERSION} AS build
+
+# Tools required to build Anki
+RUN curl -fsSL https://github.com/bazelbuild/bazelisk/releases/download/v1.7.4/bazelisk-linux-amd64 \
+    > /usr/local/bin/bazel \
+    && chmod +x /usr/local/bin/bazel \
+    && ln -s /usr/local/bin/python /usr/bin/python
+
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends \
+    curl \
+    git \
+    ninja-build \
+    rsync \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt
+RUN git clone --recursive https://github.com/ankitects/anki.git
+WORKDIR /opt/anki
+RUN git fetch --all \
+    && git checkout ${ANKI_COMMIT} \
+    && git submodule update --init --recursive
+
+# Swap in the cross-arch friendly Qt UI builder provided by this repo
+COPY qt/tools/new/build_ui.py /opt/anki/qt/tools/build_ui.py
+
+# Install Rust and build wheels
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && chmod +x $HOME/.cargo/env
+RUN /bin/bash -c "source $HOME/.cargo/env && RUST_BACKTRACE=1 ./tools/build"
+
+# Create a slim runtime with the built venv, to be reused as a base image
+FROM python:${PYTHON_VERSION}-slim AS base
+WORKDIR /opt/anki/
+COPY --from=build /opt/anki/out/wheels/ wheels/
+RUN python -m venv venv \
+    && ./venv/bin/python -m pip install --no-cache-dir --upgrade pip setuptools wheel \
+    && ./venv/bin/python -m pip install --no-cache-dir /opt/anki/wheels/*.whl \
+    && ./venv/bin/python -m pip install --no-cache-dir debugpy
+
+ENV PATH=/opt/anki/venv/bin:$PATH
+
