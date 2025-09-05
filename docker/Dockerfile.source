@@ -24,15 +24,15 @@ RUN apt-get update \
 
 # Provide a git wrapper that fakes buildhash queries but delegates other commands
 ARG BUILDHASH
-RUN bash -lc 'cat >/usr/local/bin/git <<"WRAP"
-#!/bin/sh
-if [ "$1" = "rev-parse" ] && [ "$2" = "--short=8" ] && [ "$3" = "HEAD" ]; then
-  echo "${BUILDHASH:-00000000}"
-else
-  exec /usr/bin/git "$@"
-fi
-WRAP
-chmod +x /usr/local/bin/git'
+RUN printf '%s\n' \
+  '#!/bin/sh' \
+  'if [ "$1" = "rev-parse" ] && [ "$2" = "--short=8" ] && [ "$3" = "HEAD" ]; then' \
+  '  echo "${BUILDHASH:-00000000}"' \
+  'else' \
+  '  exec /usr/bin/git "$@"' \
+  'fi' \
+  > /usr/local/bin/git \
+  && chmod +x /usr/local/bin/git
 
 # Install Rust and build the project
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
