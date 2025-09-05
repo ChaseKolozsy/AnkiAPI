@@ -28,7 +28,8 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
 ARG BUILDHASH
 # Provide a dummy buildhash so Anki's build script doesn't require git
 RUN mkdir -p out && bash -lc 'echo ${BUILDHASH:-00000000} > out/buildhash'
-RUN /bin/bash -c "source $HOME/.cargo/env && RUST_BACKTRACE=1 ./tools/build"
+# Run build in offline mode to avoid invoking git inside container
+RUN /bin/bash -c "source $HOME/.cargo/env && OFFLINE_BUILD=1 RUST_BACKTRACE=1 ./tools/build"
 
 # Install pre-compiled Anki into a venv
 FROM python:${PYTHON_VERSION}-slim as installer
