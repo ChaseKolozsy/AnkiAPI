@@ -113,21 +113,20 @@ def study_counts():
     if not username or deck_id is None:
         return jsonify({"error": "username and deck_id are required"}), 400
 
-    # Ensure collection and scheduler are available
+    # Use a temporary collection to avoid locking the main one
+    temp_collection = None
     try:
-        if collection is None:
-            collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
-            collection = Collection(collection_path)
-            # Create a scheduler tied to the collection
-            scheduler_local = V3Scheduler(collection)
-        else:
-            scheduler_local = scheduler or V3Scheduler(collection)
+        # Always use a temporary collection for counts to avoid conflicts
+        temp_collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+        temp_collection = Collection(temp_collection_path)
+        temp_scheduler = V3Scheduler(temp_collection)
 
         # Select the requested deck context
-        collection.decks.select(deck_id)
+        temp_collection.decks.select(deck_id)
 
         # Fetch counts: (new, learning, review)
-        new_c, lrn_c, rev_c = scheduler_local.counts()
+        new_c, lrn_c, rev_c = temp_scheduler.counts()
+
         return jsonify({
             "new": new_c,
             "learning": lrn_c,
@@ -136,6 +135,10 @@ def study_counts():
         }), 200
     except Exception as e:
         return jsonify({"error": f"Error fetching counts: {e}"}), 500
+    finally:
+        # Always close the temporary collection to release locks
+        if temp_collection is not None:
+            temp_collection.close()
 
 
 @study_sessions.route('/api/study', methods=['POST'])
