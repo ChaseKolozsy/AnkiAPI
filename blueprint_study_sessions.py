@@ -89,6 +89,54 @@ def process_media_files(fields_data, media_path):
 
 ### --------------------- STUDY SESSION ---------------------###
 
+@study_sessions.route('/api/study/counts', methods=['POST'])
+def study_counts():
+    """Return counts of new, learning, and review cards for the given deck.
+
+    Request JSON:
+      - username: Anki profile name
+      - deck_id: Deck ID to select
+
+    Response JSON:
+      - new: int
+      - learning: int
+      - review: int
+      - total: int
+    """
+    global collection, scheduler, collection_path
+
+    data = request.json
+    username = data.get('username')
+    deck_id = data.get('deck_id')
+
+    if not username or deck_id is None:
+        return jsonify({"error": "username and deck_id are required"}), 400
+
+    # Ensure collection and scheduler are available
+    try:
+        if collection is None:
+            collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+            collection = Collection(collection_path)
+            # Create a scheduler tied to the collection
+            from anki.scheduler.v3 import Scheduler as V3Scheduler
+            scheduler_local = V3Scheduler(collection)
+        else:
+            scheduler_local = scheduler or V3Scheduler(collection)
+
+        # Select the requested deck context
+        collection.decks.select(deck_id)
+
+        # Fetch counts: (new, learning, review)
+        new_c, lrn_c, rev_c = scheduler_local.counts()
+        return jsonify({
+            "new": new_c,
+            "learning": lrn_c,
+            "review": rev_c,
+            "total": new_c + lrn_c + rev_c,
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Error fetching counts: {e}"}), 500
+
 
 @study_sessions.route('/api/study', methods=['POST'])
 def study():
@@ -142,10 +190,10 @@ def study():
             # Extract fields used in the back template
             fields_data = {field_name: note[field_name] for field_name in note.keys() if "{{" + field_name + "}}" in back_template}
             try:
-                ease_enumerations = {1: "1: Again", 2: "2: Hard", 3: "3: Good", 4: "4: Easy" }
+                ease_enumerations = {1: "Again", 2: "Hard", 3: "Good", 4: "Easy" }
                 ease_dict = {}
                 for i in range(1, 5):
-                    ease_dict[ease_enumerations[i]] = scheduler.nextIvlStr(current_card, i)
+                    ease_dict[str(i)] = scheduler.nextIvlStr(current_card, i)
             except Exception as e:
                 return jsonify({"error": f"Error getting ease options: {e}"}), 500
 
@@ -266,4 +314,3 @@ def custom_study():
         "custom_defaults": str(custom_defaults),
         "created_deck_id": created_deck_id
     }), 200
-
