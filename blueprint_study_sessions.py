@@ -104,6 +104,7 @@ def study_counts():
       - total: int
     """
     global collection, scheduler, collection_path
+    from anki.scheduler.v3 import Scheduler as V3Scheduler
 
     data = request.json
     username = data.get('username')
@@ -118,7 +119,6 @@ def study_counts():
             collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
             collection = Collection(collection_path)
             # Create a scheduler tied to the collection
-            from anki.scheduler.v3 import Scheduler as V3Scheduler
             scheduler_local = V3Scheduler(collection)
         else:
             scheduler_local = scheduler or V3Scheduler(collection)
