@@ -75,15 +75,49 @@ def extract_media_filenames(field_value):
     return media_files
 
 def process_media_files(fields_data, media_path):
+    """
+    Process media files and replace references with data URLs in the fields.
+    Returns tuple of (updated_fields_data, media_files_dict)
+    """
     media_files = {}
+    updated_fields = {}
+
     for field_name, field_value in fields_data.items():
+        updated_value = field_value
         filenames = extract_media_filenames(field_value)
+
         for filename in filenames:
             media_file_path = os.path.join(media_path, filename)
             if os.path.exists(media_file_path):
                 with open(media_file_path, 'rb') as media_file:
-                    media_files[filename] = base64.b64encode(media_file.read()).decode('utf-8')
-    return media_files
+                    file_data = media_file.read()
+                    base64_data = base64.b64encode(file_data).decode('utf-8')
+                    media_files[filename] = base64_data
+
+                    # Determine mime type based on file extension
+                    ext = filename.lower().split('.')[-1]
+                    mime_type = {
+                        'png': 'image/png',
+                        'jpg': 'image/jpeg',
+                        'jpeg': 'image/jpeg',
+                        'gif': 'image/gif',
+                        'svg': 'image/svg+xml',
+                        'webp': 'image/webp',
+                        'mp3': 'audio/mpeg',
+                        'wav': 'audio/wav',
+                        'ogg': 'audio/ogg',
+                    }.get(ext, 'application/octet-stream')
+
+                    # Create data URL
+                    data_url = f"data:{mime_type};base64,{base64_data}"
+
+                    # Replace image src references with data URLs
+                    updated_value = updated_value.replace(f'src="{filename}"', f'src="{data_url}"')
+                    updated_value = updated_value.replace(f"src='{filename}'", f"src='{data_url}'")
+
+        updated_fields[field_name] = updated_value
+
+    return updated_fields, media_files
 
 
 
@@ -177,7 +211,7 @@ def study():
             fields_data = {field_name: note[field_name] for field_name in note.keys() if "{{" + field_name + "}}" in front_template}
 
             # Extract fields and media files using the helper function
-            media_files = process_media_files(fields_data, media_path)
+            fields_data, media_files = process_media_files(fields_data, media_path)
 
             return jsonify({"front": fields_data, "card_id": current_card.id, "media_files": media_files}), 200, {'Content-Type': 'application/json; charset=utf-8', 'ensure_ascii': False}
 
@@ -201,7 +235,7 @@ def study():
                 return jsonify({"error": f"Error getting ease options: {e}"}), 500
 
             # Extract fields and media files using the helper function
-            media_files = process_media_files(fields_data, media_path)
+            fields_data, media_files = process_media_files(fields_data, media_path)
             return jsonify({"back": fields_data, "ease_options": ease_dict, "media_files": media_files}), 200, {'Content-Type': 'application/json; charset=utf-8', 'ensure_ascii': False}
 
         elif action in ['1', '2', '3', '4']:
@@ -246,7 +280,7 @@ def study():
             fields_data = {field_name: note[field_name] for field_name in note.keys() if "{{" + field_name + "}}" in front_template}
 
             # Extract media references
-            media_files = process_media_files(fields_data, media_path)
+            fields_data, media_files = process_media_files(fields_data, media_path)
 
             return jsonify({"front": fields_data, "card_id": current_card.id, "time_taken_last_card": current_card.time_taken(capped=False), "media_files": media_files}), 200, {'Content-Type': 'application/json; charset=utf-8', 'ensure_ascii': False}
 
