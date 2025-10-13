@@ -300,54 +300,53 @@ def study():
 
 @study_sessions.route('/api/custom-study', methods=['POST'])
 def custom_study():
-    global collection, scheduler, collection_path
-
     data = request.json
     username = data.get('username')
     deck_id = data.get('deck_id')
     custom_study_params = data.get('custom_study_params')
 
+    if not username or deck_id is None:
+        return jsonify({"error": "username and deck_id are required"}), 400
+
+    # Use a temporary collection to avoid locking conflicts with study sessions
+    temp_collection = None
     try:
         collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
-        if collection is None:
-            collection = Collection(collection_path)
-            scheduler = V3Scheduler(collection)
-    except Exception as e:
-        return jsonify({"error": f"Error opening collection: {e}, collection_path: {collection_path}"}), 500
+        temp_collection = Collection(collection_path)
+        temp_scheduler = V3Scheduler(temp_collection)
 
-    try:
-        collection.decks.select(deck_id)
-    except Exception as e:
-        return jsonify({"error": f"Error selecting deck: {e}"}), 500
-    
-    try:
+        # Select the requested deck context
+        temp_collection.decks.select(deck_id)
+
+        # Create the custom study request
         custom_study_request = scheduler_pb2.CustomStudyRequest(
             deck_id=deck_id,
             **custom_study_params
         )
-        changes = scheduler.custom_study(custom_study_request)
-        custom_defaults = scheduler.custom_study_defaults(DeckId(int(deck_id)))
-        
-        # Look for newly created deck ID in the changes string representation
+
+        # Create the custom study session
+        changes = temp_scheduler.custom_study(custom_study_request)
+        custom_defaults = temp_scheduler.custom_study_defaults(DeckId(int(deck_id)))
+
+        # Look for newly created deck ID
         created_deck_id = None
-        changes_str = str(changes)
-        
-        # Check if a new deck was created - we need to find the deck ID 
-        # in the response. The Custom Study deck will be named "Custom Study Session"
-        # in the user's locale language.
-        custom_study_deck_name = "Custom Study Session"  # This might need to be translated
-        found_decks = collection.decks.all_names_and_ids()
+        custom_study_deck_name = "Custom Study Session"
+        found_decks = temp_collection.decks.all_names_and_ids()
         for deck in found_decks:
             if deck.name == custom_study_deck_name:
                 created_deck_id = deck.id
                 break
+
     except Exception as e:
-        collection.close()
         return jsonify({"error": f"Error creating custom study session: {e}"}), 500
+    finally:
+        # Always close the temporary collection to release locks
+        if temp_collection is not None:
+            temp_collection.close()
 
     return jsonify({
-        "message": "Custom study session created successfully.", 
-        "changes": str(changes), 
+        "message": "Custom study session created successfully.",
+        "changes": str(changes),
         "custom_defaults": str(custom_defaults),
         "created_deck_id": created_deck_id
     }), 200
