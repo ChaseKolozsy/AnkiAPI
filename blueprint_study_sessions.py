@@ -9,6 +9,7 @@ from anki import scheduler_pb2
 import os
 import re
 import base64
+from anki_paths import collection_path as get_collection_path, media_path as get_media_path
 
 study_sessions = Blueprint('study_sessions', __name__)
 
@@ -151,7 +152,7 @@ def study_counts():
     temp_collection = None
     try:
         # Always use a temporary collection for counts to avoid conflicts
-        temp_collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+        temp_collection_path = get_collection_path(username)
         temp_collection = Collection(temp_collection_path)
         temp_scheduler = V3Scheduler(temp_collection)
 
@@ -186,8 +187,8 @@ def study():
 
     # Ensure collection is open
     if collection is None:
-        collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
-        media_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.media")
+        collection_path = get_collection_path(username)
+        media_path = get_media_path(username)
         collection = Collection(collection_path)
         scheduler = V3Scheduler(collection)
 
@@ -311,7 +312,7 @@ def custom_study():
     # Use a temporary collection to avoid locking conflicts with study sessions
     temp_collection = None
     try:
-        collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+        collection_path = get_collection_path(username)
         temp_collection = Collection(collection_path)
         temp_scheduler = V3Scheduler(temp_collection)
 

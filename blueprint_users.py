@@ -16,6 +16,7 @@ from anki.consts import (
 
 import os
 import shutil
+from anki_paths import collection_path as get_collection_path, anki_base as get_anki_base
 
 # Map state names to their corresponding queue numbers
 state_map = {
@@ -34,7 +35,7 @@ users = Blueprint('users', __name__)
 ###------------------------- USERS -------------------------###
 @users.route('/api/users/create/<username>', methods=['POST'])
 def create_user(username):
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     if not os.path.exists(collection_path):
         os.makedirs(os.path.dirname(collection_path), exist_ok=True)
         col = Collection(collection_path)
@@ -45,7 +46,7 @@ def create_user(username):
 
 @users.route('/api/users/delete/<username>', methods=['DELETE'])
 def delete_user(username):
-    user_dir = os.path.expanduser(f"~/.local/share/Anki2/{username}")
+    user_dir = get_anki_base(username)
     try:
         if os.path.exists(user_dir):
             shutil.rmtree(user_dir)
@@ -70,7 +71,7 @@ def sync_login():
         endpoint = request.json.get('endpoint')
         
         # Open the collection
-        collection_path = os.path.expanduser(f"~/.local/share/Anki2/{profile_name}/collection.anki2")
+        collection_path = get_collection_path(profile_name)
         if not os.path.exists(collection_path):
             return jsonify({"error": f"Profile {profile_name} does not exist"}), 404
             

@@ -15,6 +15,7 @@ from anki.consts import (
 )
 
 import os
+from anki_paths import collection_path as get_collection_path
 
 # Map state names to their corresponding queue numbers
 state_map = {
@@ -42,7 +43,7 @@ def sync_database():
     upload = request.json.get('upload', False)
 
     try:
-        collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+        collection_path = get_collection_path(username)
         col = Collection(collection_path)
     except Exception as e:
         return jsonify({"error": "error opening collection: " + str(e)}), 500
@@ -107,7 +108,7 @@ def sync_status():
     hkey = request.json['hkey']
 
     try:
-        collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+        collection_path = get_collection_path(username)
         col = Collection(collection_path)
     except Exception as e:
         return jsonify({"error": "error opening collection: " + str(e)}), 500
@@ -124,7 +125,7 @@ def media_sync_status():
     username = request.json['username']
 
     try:
-        collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+        collection_path = get_collection_path(username)
         col = Collection(collection_path)
     except Exception as e:
         return jsonify({"error": "error opening collection: " + str(e)}), 500

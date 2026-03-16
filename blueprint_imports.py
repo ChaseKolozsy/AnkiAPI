@@ -16,6 +16,7 @@ from anki.consts import (
     QUEUE_TYPE_PREVIEW
 )
 import os
+from anki_paths import collection_path as get_collection_path, media_path as get_media_path
 
 # Map state names to their corresponding queue numbers
 state_map = {
@@ -46,7 +47,7 @@ def import_package():
     if not username:
         return jsonify({"error": "Username is required"}), 400
 
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
     
     if 'file' not in request.files:
@@ -112,7 +113,7 @@ def import_csv():
     delimiter = request.args.get('delimiter', 'COMMA')
     delimiter_enum = CsvMetadata.Delimiter.Value(delimiter.upper())
 
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
 
     if not notetype_name or not target_deck_name:
@@ -222,7 +223,7 @@ def unzip_media():
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    media_dir = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.media")
+    media_dir = get_media_path(username)
     os.makedirs(media_dir, exist_ok=True)
 
     temp_file_dir = os.path.expanduser(f"~/temp")
@@ -266,7 +267,7 @@ def import_media():
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    media_dir = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.media")
+    media_dir = get_media_path(username)
     os.makedirs(media_dir, exist_ok=True)
 
     media_file_path = os.path.join(media_dir, file.filename)

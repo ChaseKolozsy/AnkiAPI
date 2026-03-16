@@ -16,6 +16,7 @@ from anki.consts import (
 )
 
 import os
+from anki_paths import collection_path as get_collection_path, anki_base as get_anki_base
 
 # Map state names to their corresponding queue numbers
 state_map = {
@@ -55,8 +56,8 @@ def export_collection_package():
             legacy = False
 
     
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
-    out_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.apkg")
+    collection_path = get_collection_path(username)
+    out_path = os.path.join(get_anki_base(username), "collection.apkg")
     col = Collection(path=collection_path)  # Adjust path as necessary
     try:
         col.export_collection_package(out_path=out_path, include_media=include_media, legacy=legacy)
@@ -88,7 +89,7 @@ def export_anki_package():
     except Exception as e:
         return jsonify({"success": False, "message": f"failed to create export options: {str(e)}"})
     
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     
     col = Collection(path=collection_path)  # Adjust path as necessary
     try:
@@ -119,7 +120,7 @@ def export_note_csv():
     deck_id_limit = DeckIdLimit(deck_id=int(deck_id))
     export_limit: ExportLimit = deck_id_limit
     
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     
     col = Collection(path=collection_path)  # Adjust path as necessary
     try:

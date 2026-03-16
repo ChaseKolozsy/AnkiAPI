@@ -18,6 +18,7 @@ from anki.consts import (
 
 
 import os
+from anki_paths import collection_path as get_collection_path
 
 # Map state names to their corresponding queue numbers
 state_map = {
@@ -38,7 +39,7 @@ notetypes = Blueprint('notetypes_blueprint', __name__)
 def get_notetypes():
     data = request.json
     username = data.get('username')
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
     try:
         notetypes = col.models.all_names_and_ids()
@@ -52,7 +53,7 @@ def get_notetypes():
 def get_notetype_id_by_card_id(card_id):
     data = request.json
     username = data.get('username')
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
     try:
         card = col.get_card(card_id)
@@ -80,7 +81,7 @@ def create_notetype_with_fields():
     if not base_notetype_id:
         return jsonify({"error": "Base notetype ID is required"}), 400
 
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
 
     try:
@@ -134,7 +135,7 @@ def set_sort_field(notetype_id):
     if not field_name or not username:
         return jsonify({"error": "Field name and username are required"}), 400
 
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
 
     try:
@@ -173,7 +174,7 @@ def reorder_fields(notetype_id):
     if not new_order or not username:
         return jsonify({"error": "New order of fields is required"}), 400
 
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
 
     try:
@@ -229,7 +230,7 @@ def add_template_to_notetype(notetype_id):
     if not template_name or not qfmt or not afmt or not username:
         return jsonify({"error": "template_name, qfmt, and afmt are required"}), 400
 
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
 
     try:
@@ -266,7 +267,7 @@ def update_notetype_css(notetype_id):
     if not new_css:
         return jsonify({"error": "CSS content is required"}), 400
 
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
 
     try:
@@ -300,7 +301,7 @@ def add_field_to_notetype(notetype_id):
     if not field_name or not username:
         return jsonify({"error": "Field name is required"}), 400
 
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
     new_field = FieldDict()
 
@@ -335,7 +336,7 @@ def add_field_to_notetype(notetype_id):
 def get_notetype_css(notetype_id):
     data = request.json
     username = data.get('username')
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
 
     try:
@@ -359,7 +360,7 @@ def get_notetype_css(notetype_id):
 def get_notetype_templates(notetype_id):
     data = request.json
     username = data.get('username')
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
 
     try:
@@ -383,7 +384,7 @@ def get_notetype_templates(notetype_id):
 def get_notetype_fields(notetype_id):
     data = request.json
     username = data.get('username')
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
 
     try:
@@ -407,7 +408,7 @@ def get_notetype_fields(notetype_id):
 def get_sort_field(notetype_id):
     data = request.json
     username = data.get('username')
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
 
     try:
@@ -433,7 +434,7 @@ def get_sort_field(notetype_id):
 def remove_field_from_notetype(notetype_id, field_name):
     data = request.json
     username = data.get('username')
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
 
     try:
@@ -466,7 +467,7 @@ def remove_field_from_notetype(notetype_id, field_name):
 def delete_notetype(notetype_id):
     data = request.json
     username = data.get('username')
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = Collection(collection_path)
 
     try:
@@ -510,7 +511,7 @@ def update_note_fields(note_id):
     if not fields and tags is None:
         return jsonify({"error": "At least fields or tags must be provided"}), 400
     
-    collection_path = os.path.expanduser(f"~/.local/share/Anki2/{username}/collection.anki2")
+    collection_path = get_collection_path(username)
     col = None
     
     try:
