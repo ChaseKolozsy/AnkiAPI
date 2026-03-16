@@ -23,7 +23,10 @@ app.register_blueprint(db)
 # debugpy.wait_for_client()
 
 if __name__ == '__main__':
-    import debugpy
-    debugpy.listen(("0.0.0.0", 5678))
-    print("⏳ Waiting for debugger attach on port 5678...")
+    try:
+        import debugpy
+        debugpy.listen(("0.0.0.0", 5678))
+        print("⏳ Debugpy listening on port 5678")
+    except ImportError:
+        pass
     app.run(host='0.0.0.0', port=5001)
