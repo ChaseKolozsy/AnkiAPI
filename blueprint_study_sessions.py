@@ -197,7 +197,7 @@ def study():
             collection.decks.select(deck_id)
             queued_cards = scheduler.get_queued_cards(fetch_limit=1)
             if not queued_cards.cards:
-                return jsonify({"message": "No more cards to review."}), 200
+                return jsonify({"status": "finished", "remaining": 0, "message": "No more cards to review."}), 200
 
             current_card = queued_cards.cards[0]
             note = collection.get_note(NoteId(current_card.card.note_id))
@@ -214,7 +214,10 @@ def study():
             # Extract fields and media files using the helper function
             fields_data, media_files = process_media_files(fields_data, media_path)
 
-            return jsonify({"front": fields_data, "card_id": current_card.id, "media_files": media_files}), 200, {'Content-Type': 'application/json; charset=utf-8', 'ensure_ascii': False}
+            counts = scheduler.counts()
+            remaining = sum(counts)
+
+            return jsonify({"front": fields_data, "card_id": current_card.id, "note_id": int(note.id), "remaining": remaining, "media_files": media_files}), 200, {'Content-Type': 'application/json; charset=utf-8', 'ensure_ascii': False}
 
         elif action == 'flip':
             if current_card is None:
@@ -237,7 +240,7 @@ def study():
 
             # Extract fields and media files using the helper function
             fields_data, media_files = process_media_files(fields_data, media_path)
-            return jsonify({"back": fields_data, "ease_options": ease_dict, "media_files": media_files}), 200, {'Content-Type': 'application/json; charset=utf-8', 'ensure_ascii': False}
+            return jsonify({"back": fields_data, "note_id": int(current_card.nid), "ease_options": ease_dict, "media_files": media_files}), 200, {'Content-Type': 'application/json; charset=utf-8', 'ensure_ascii': False}
 
         elif action in ['1', '2', '3', '4']:
             if current_card is None:
@@ -268,7 +271,7 @@ def study():
             # Fetch the next queued card
             queued_cards = scheduler.get_queued_cards(fetch_limit=1)
             if not queued_cards.cards:
-                return jsonify({"message": "No more cards to review."}), 200
+                return jsonify({"status": "finished", "remaining": 0, "message": "No more cards to review."}), 200
             current_card = queued_cards.cards[0]
             note = collection.get_note(NoteId(current_card.card.note_id))
             notetype = collection.models.get(note.mid)
@@ -283,7 +286,10 @@ def study():
             # Extract media references
             fields_data, media_files = process_media_files(fields_data, media_path)
 
-            return jsonify({"front": fields_data, "card_id": current_card.id, "time_taken_last_card": current_card.time_taken(capped=False), "media_files": media_files}), 200, {'Content-Type': 'application/json; charset=utf-8', 'ensure_ascii': False}
+            counts = scheduler.counts()
+            remaining = sum(counts)
+
+            return jsonify({"front": fields_data, "card_id": current_card.id, "note_id": int(note.id), "remaining": remaining, "time_taken_last_card": current_card.time_taken(capped=False), "media_files": media_files}), 200, {'Content-Type': 'application/json; charset=utf-8', 'ensure_ascii': False}
 
         elif action == 'close':
             if collection is not None:
