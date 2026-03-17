@@ -1,97 +1,84 @@
-# AnkiApi
+# AnkiAPI
 
-AnkiApi is a project designed to enable the incorporation of the Anki database and spaced repetition system into applications that can benefit from spaced repetition without the Anki GUI. It is meant to be fully featured as far as possible to the exclusion of the GUI. It uses Flask to serve the API and Docker to containerize the application.
+AnkiAPI is a lightweight REST API that wraps the Anki spaced repetition engine for use in external applications — no Anki GUI required. It uses Flask to serve the API and the native `anki` Python package to interact with Anki's database directly.
 
 ## AnkiClient
 
-[Visit AnkiClient for premade python functions for calling the API that can be used in conjunction with this project](https://github.com/ChaseKolozsy/AnkiClient)
+[Visit AnkiClient for premade Python functions for calling the API](https://github.com/ChaseKolozsy/AnkiClient)
 
 ## Features
 
 - Daily study materials generated based on Anki's spaced repetition schedule.
-- Integration with Anki notes for seamless conversation and review.
-- API endpoints for various functionalities including decks, cards, users, imports, exports, and note types.
+- Full card, deck, note type, and study session management via REST endpoints.
+- AnkiWeb sync support (login, push/pull collections).
+- Import/export of `.apkg` packages and CSV files.
+- Cross-platform: works on Windows, macOS, and Linux.
 
 ## Installation
 
-To set up the AnkiApi project, follow these steps:
-
-1. Clone the AnkiApi repository:
+1. Clone the repository:
 
     ```bash
     git clone https://github.com/ChaseKolozsy/AnkiAPI.git
-    cd AnkiApi
+    cd AnkiAPI
     ```
 
-2. Clone the Anki repository inside the `AnkiApi` directory:
+2. Create a virtual environment and install dependencies:
 
     ```bash
-    git clone https://github.com/ankitects/anki.git
+    python -m venv .venv
+    # Windows
+    .venv\Scripts\activate
+    # macOS/Linux
+    source .venv/bin/activate
+
+    pip install anki flask
     ```
 
-3. Navigate to the `AnkiAPI/docker` directory  and run the `build.sh` script: 
+3. Start the server:
 
     ```bash
-    cd docker
-    ./build.sh
+    python anki_api_server.py
     ```
 
-    - > There is another dockerfile inside of the `anki/docs/docker` directory, but it is not recommended to use this one because it will not work without modifying it like the one in this project.
+    The API will be available at `http://localhost:5001`.
 
 ## Directory Structure
 
-- `docker/`: Contains Docker-related files.
-- `qt/`: This is necessary for making the docker build compatible with macos, linux, and windows. It will not compile the qt framework if qt is not compatible with the architecture. 
-- `anki/`: Cloned Anki repository.
-- `anki_api_server.py`: This is the entrypoint to the Anki API and the docker container. It is the main server script to run the Anki API.
-- `blueprint_decks.py`: Blueprint for decks-related API endpoints.
-- `blueprint_db.py`: Blueprint for database-related API endpoints.
-- `blueprint_imports.py`: Blueprint for imports-related API endpoints.
-- `blueprint_users.py`: Blueprint for users-related API endpoints.
-- `blueprint_cards.py`: Blueprint for cards-related API endpoints.
-- `blueprint_exports.py`: Blueprint for exports-related API endpoints.
-- `blueprint_notetypes.py`: Blueprint for note types-related API endpoints.
-- `blueprint_study_sessions.py`: Blueprint for study sessions-related API endpoints.
+- `anki_api_server.py`: Flask app entry point — registers all blueprints and starts the server on port 5001.
+- `anki_paths.py`: Cross-platform Anki collection path locator (Windows/macOS/Linux).
+- `blueprint_cards.py`: Card CRUD, search, suspend, bury, reschedule, reposition.
+- `blueprint_decks.py`: Deck CRUD, configuration, card listing.
+- `blueprint_notetypes.py`: Note type management (create, modify fields, set sort field).
+- `blueprint_study_sessions.py`: Study session management (start, flip, answer, close, custom sessions).
+- `blueprint_users.py`: Anki profile management and AnkiWeb sync login.
+- `blueprint_db.py`: Database sync operations (push/pull with AnkiWeb).
+- `blueprint_imports.py`: Import `.apkg` packages, CSV files, and media.
+- `blueprint_exports.py`: Export collections and notes.
+- `qt/`: Build tooling for Qt compatibility across platforms.
 
 ## Usage
 
-1. Start the Anki API server by running the `build.sh` script, or by choosing which command from the script you would like to run in isolation without running the build.sh script. 
-2. Once the docker container is created, you can run it independently of this repository and it can be interacted with through the AnkiClient. You can also create your own functions to interact with the endpoints in your applications based on the provided API endpoints. Eventually an OpenApi spec will be provided to document the API endpoints.
-3. Use the provided API endpoints to interact with your Anki database for various functionalities.
-4. To rebuild the docker container, run the `rebuild.sh` script, wait for it to load the docker container in interactive mode, then, open a new terminal and run the `restore.sh` script. This will delete all Docker containers and images that have anki-api in their name. It also deletes dangling images and caches so comment that out if you don't want to delete those. This will preserve the collection from the destroyed container and restore it when the new container is created. This is done automatically in a 2 step process, `rebuild.sh` and `restore.sh`.
+1. Start the server: `python anki_api_server.py`
+2. Use the API endpoints directly or through [AnkiClient](https://github.com/ChaseKolozsy/AnkiClient).
 
-## Link Host Collection (Volume Mount)
+Quick test:
 
-By default, `docker/build.sh` mounts your host's Anki collection into the container so both share the same data directory. The script auto-detects your OS and picks the common Anki2 location:
-
-- Linux: `$HOME/.local/share/Anki2`
-- macOS: `$HOME/Library/Application Support/Anki2`
-- Windows (Docker Desktop, Git Bash/PowerShell): `%APPDATA%\Anki2`
-
-The path is bound to `/home/anki/.local/share/Anki2` inside the container. Example mapping on Linux:
-
-```
-docker run ... \
-  -v "$HOME/.local/share/Anki2:/home/anki/.local/share/Anki2" \
-  anki-api
-```
-
-Notes:
-
-- To override the detected path, pass `-m <host_anki2_dir>` to `build.sh`:
-  - `./docker/build.sh -m "/custom/path/to/Anki2"`
-- Docker Desktop may prompt to allow file sharing for the mounted folder/drive; approve it in Settings if needed.
-- The server listens on container port `5001`. The script maps host `5001:5001` by default. Access the API at `http://localhost:5001/api`.
-
-Quick test after build:
-
-```
+```bash
 curl -X POST "http://localhost:5001/api/users/create/User%201"
 ```
 
+## Anki Collection Paths
+
+The server reads Anki data from the standard locations:
+
+- **Windows:** `%APPDATA%\Anki2\{username}`
+- **macOS:** `~/Library/Application Support/Anki2/{username}`
+- **Linux:** `~/.local/share/Anki2/{username}`
+
 ## Contributing
 
-We welcome contributions to improve AnkiApi! Please fork the repository and submit pull requests.
+Contributions welcome! Fork the repository and submit pull requests.
 
 ## License
 
