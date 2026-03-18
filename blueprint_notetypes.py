@@ -258,6 +258,49 @@ def add_template_to_notetype(notetype_id):
         col.close()
         return jsonify({"error": str(e)}), 500
 
+@notetypes.route('/api/notetypes/<notetype_id>/update-template', methods=['POST'])
+def update_template(notetype_id):
+    data = request.json
+    template_index = data.get('template_index', 0)
+    qfmt = data.get('qfmt')
+    afmt = data.get('afmt')
+    username = data.get('username')
+
+    if not username:
+        return jsonify({"error": "Username is required"}), 400
+    if qfmt is None and afmt is None:
+        return jsonify({"error": "At least qfmt or afmt must be provided"}), 400
+
+    collection_path = get_collection_path(username)
+    col = Collection(collection_path)
+
+    try:
+        notetype_id = int(notetype_id)
+        notetype = col.models.get(NotetypeId(notetype_id))
+        if not notetype:
+            col.close()
+            return jsonify({"error": "Notetype not found"}), 404
+
+        if template_index >= len(notetype['tmpls']):
+            col.close()
+            return jsonify({"error": "Template index out of range"}), 400
+
+        if qfmt is not None:
+            notetype['tmpls'][template_index]['qfmt'] = qfmt
+        if afmt is not None:
+            notetype['tmpls'][template_index]['afmt'] = afmt
+
+        col.models.save(notetype)
+        col.close()
+
+        return jsonify({"message": "Template updated successfully"}), 200
+    except ValueError:
+        col.close()
+        return jsonify({"error": "Invalid notetype ID"}), 400
+    except Exception as e:
+        col.close()
+        return jsonify({"error": str(e)}), 500
+
 @notetypes.route('/api/notetypes/<notetype_id>/update-css', methods=['POST'])
 def update_notetype_css(notetype_id):
     data = request.json
